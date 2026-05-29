@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Pomodoro Widget</title>
+    <style>
+        :root {
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            --text-color: #37352f;
+            --bg-color: transparent;
+        }
+
+        /* Detecta se o usuário prefere modo escuro (se adapta ao Notion Dark) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-color: #e3e3e3;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .pomodoro-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(125, 125, 125, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 340px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .modes {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 5px;
+        }
+
+        .mode-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            opacity: 0.6;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            opacity: 1;
+            font-weight: bold;
+            background: rgba(125, 125, 125, 0.15);
+        }
+
+        .timer {
+            font-size: 3.5rem;
+            font-weight: 600;
+            margin: 10px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .main-btn {
+            background: var(--text-color);
+            color: var(--bg-color, #fff);
+            border: none;
+            padding: 8px 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        /* Inverte a cor do botão principal no modo escuro */
+        @media (prefers-color-scheme: dark) {
+            .main-btn {
+                background: #e3e3e3;
+                color: #191919;
+            }
+        }
+
+        .main-btn:hover {
+            opacity: 0.9;
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: 1px solid rgba(125, 125, 125, 0.4);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .color-picker-container {
+            margin-bottom: 20px;
+        }
+
+        .color-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .color-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+
+        .color-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .color-dot.selected {
+            border-color: var(--text-color);
+            transform: scale(1.1);
+        }
+
+        .cycles-container {
+            border-top: 1px solid rgba(125, 125, 125, 0.2);
+            padding-top: 15px;
+        }
+
+        .cycles-label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .cycles-track {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .cycle-bubble {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(125, 125, 125, 0.3);
+            transition: background 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pomodoro-card">
+        <div class="modes">
+            <button class="mode-btn active" onclick="setMode('foco')">Foco</button>
+            <button class="mode-btn" onclick="setMode('curta')">Pausa Curta</button>
+            <button class="mode-btn" onclick="setMode('longa')">Pausa Longa</button>
+        </div>
+
+        <div class="timer" id="timer-display">25:00</div>
+
+        <div class="controls">
+            <button class="main-btn" id="start-btn" onclick="toggleTimer()">Iniciar</button>
+            <button class="reset-btn" onclick="resetTimer()">➔</button>
+        </div>
+
+        <div class="color-picker-container" id="picker-area">
+            <span class="color-label">Escolha a cor do bloco atual:</span>
+            <div class="color-options">
+                <!-- Cores em tons pastéis estéticos -->
+                <div class="color-dot selected" style="background-color: #ff6b6b;" onclick="selectColor(this, '#ff6b6b')"></div>
+                <div class="color-dot" style="background-color: #4dadf7;" onclick="selectColor(this, '#4dadf7')"></div>
+                <div class="color-dot" style="background-color: #51cf66;" onclick="selectColor(this, '#51cf66')"></div>
+                <div class="color-dot" style="background-color: #fcc419;" onclick="selectColor(this, '#fcc419')"></div>
+                <div class="color-dot" style="background-color: #cc5de8;" onclick="selectColor(this, '#cc5de8')"></div>
+            </div>
+        </div>
+
+        <div class="cycles-container">
+            <span class="cycles-label">Ciclos de Hoje</span>
+            <div class="cycles-track" id="cycles-track">
+                <div class="cycle-bubble"></div>
+                <div class="cycle-bubble"></div>
+                <div class="cycle-bubble"></div>
+                <div class="cycle-bubble"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Áudio de alarme sutil usando API nativa do navegador (Beep) -->
+    <script>
+        let timer;
+        let isRunning = false;
+        let currentMode = 'foco'; // foco, curta, longa
+        let timeLeft = 25 * 60;
+        let selectedColor = '#ff6b6b';
+        let completedCycles = 0;
+
+        const display = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const bubbles = document.querySelectorAll('.cycle-bubble');
+        const pickerArea = document.getElementById('picker-area');
+
+        const times = {
+            foco: 25 * 60,
+            curta: 5 * 60,
+            longa: 15 * 60
+        };
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const seconds = (timeLeft % 60).toString().padStart(2, '0');
+            display.textContent = `${minutes}:${seconds}`;
+        }
+
+        function setMode(mode) {
+            clearInterval(timer);
+            isRunning = false;
+            currentMode = mode;
+            timeLeft = times[mode];
+            startBtn.textContent = 'Iniciar';
+            
+            // Atualiza botões ativos
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Esconde o seletor de cores se for pausa
+            if (mode !== 'foco') {
+                pickerArea.style.display = 'none';
+            } else {
+                pickerArea.style.display = 'block';
+            }
+
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(timer);
+                startBtn.textContent = 'Iniciar';
+            } else {
+                timer = setInterval(countdown, 1000);
+                startBtn.textContent = 'Pausar';
+            }
+            isRunning = !isRunning;
+        }
+
+        function countdown() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                clearInterval(timer);
+                isRunning = false;
+                startBtn.textContent = 'Iniciar';
+                playAlarm();
+                
+                if (currentMode === 'foco') {
+                    handleFocusCompleted();
+                } else {
+                    setMode('foco');
+                }
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            timeLeft = times[currentMode];
+            startBtn.textContent = 'Iniciar';
+            updateDisplay();
+        }
+
+        function selectColor(element, color) {
+            document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedColor = color;
+        }
+
+        function handleFocusCompleted() {
+            if (completedCycles < 4) {
+                // Pinta a bolinha atual com a cor selecionada
+                bubbles[completedCycles].style.backgroundColor = selectedColor;
+                completedCycles++;
+            }
+
+            // Regra do Pomodoro Clássico
+            if (completedCycles === 4) {
+                alert("Parabéns! Você completou 4 ciclos. Hora de uma pausa longa!");
+                setMode('longa');
+                // Opcional: resetar as bolinhas após a pausa longa se desejar
+            } else {
+                setMode('curta');
+            }
+        }
+
+        function playAlarm() {
+            // Cria um som eletrônico suave direto no navegador para não precisar de arquivos externos
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, context.currentTime); // Nota Lá
+            gain.gain.setValueAtTime(0.3, context.currentTime);
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start();
+            oscillator.stop(context.currentTime + 0.5);
+        }
+    </script>
+</body>
+</html>
