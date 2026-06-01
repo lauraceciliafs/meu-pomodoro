@@ -477,13 +477,29 @@
         // --------------------------------------------------------
         // SISTEMA PRINCIPAL E ESTILIZAÇÃO
         // --------------------------------------------------------
-        function updateDisplay() {
+       function updateDisplay() {
             if (blocksQueue.length === 0 && currentMode === 'foco') {
-                display.textContent = "00:00"; progressBar.style.strokeDashoffset = circumference; return;
+                display.textContent = "00:00"; 
+                display.style.fontSize = "2.5rem"; // Volta a fonte ao normal
+                progressBar.style.strokeDashoffset = circumference; 
+                return;
             }
-            const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            
+            // Lógica matemática para converter os segundos totais
+            const hours = Math.floor(timeLeft / 3600);
+            const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
             const seconds = (timeLeft % 60).toString().padStart(2, '0');
-            display.textContent = `${minutes}:${seconds}`;
+            
+            // Se tiver 1 hora ou mais, mostra H:MM:SS e encolhe a letra
+            if (hours > 0) {
+                display.textContent = `${hours}:${minutes}:${seconds}`;
+                display.style.fontSize = "1.8rem"; 
+            } else {
+                // Menos de 1 hora, mostra formato clássico MM:SS gigante
+                display.textContent = `${minutes}:${seconds}`;
+                display.style.fontSize = "2.5rem"; 
+            }
+            
             if (totalSecondsCurrent > 0) {
                 const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference;
                 progressBar.style.strokeDashoffset = offset;
