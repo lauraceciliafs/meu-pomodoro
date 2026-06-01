@@ -328,12 +328,8 @@
         let timeLeft = 0;
         let totalSecondsCurrent = 0;
         
-        // Fila fixa de matérias (Carrega isso por padrão toda vez que atualizar)
-        let blocksQueue = JSON.parse(localStorage.getItem('pomodoroQueue')) || [
-            { id: 1, subject: "Desenvolvimento Web", color: "#ff6b6b", duration: 45 * 60, completed: false },
-            { id: 2, subject: "Estrutura de Dados", color: "#4dabf7", duration: 30 * 60, completed: false },
-            { id: 3, subject: "Inglês", color: "#8ce99a", duration: 25 * 60, completed: false }
-        ];
+       // Carrega a fila salva na memória (ou inicia vazia se não houver)
+        let blocksQueue = JSON.parse(localStorage.getItem('pomodoroQueue')) || [];
         let currentMode = 'foco'; 
         let currentBlockIndex = 0;
         let completedFocosCount = 0; 
