@@ -3,338 +3,658 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notion Pomodoro Widget</title>
+    <title>Aesthetic Pomodoro - Pro Setup & History</title>
+    <!-- Fontes elegantes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
             --text-color: #37352f;
-            --bg-color: transparent;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(125, 125, 125, 0.2);
+            --accent-color: #ff6b6b;
         }
 
-        /* Detecta se o usuário prefere modo escuro (se adapta ao Notion Dark) */
         @media (prefers-color-scheme: dark) {
             :root {
                 --text-color: #e3e3e3;
+                --bg-card: rgba(25, 25, 25, 0.85);
             }
         }
 
         body {
             margin: 0;
             padding: 10px;
-            font-family: var(--font-family);
+            font-family: var(--font-sans);
             color: var(--text-color);
-            background-color: var(--bg-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+            background-color: transparent;
+            transition: background 0.5s ease;
         }
 
         .pomodoro-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(125, 125, 125, 0.2);
-            border-radius: 16px;
-            padding: 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
             width: 100%;
-            max-width: 340px;
+            max-width: 350px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden; 
         }
 
-        .modes {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            gap: 5px;
+        /* Botões do Topo */
+        .top-btn {
+            position: absolute; top: 16px; background: none; border: none;
+            font-size: 1.1rem; cursor: pointer; opacity: 0.5;
+            transition: opacity 0.2s, transform 0.3s; color: var(--text-color); z-index: 10;
         }
+        .top-btn:hover { opacity: 1; transform: scale(1.1); }
+        .settings-toggle { right: 16px; }
+        .settings-toggle:hover { transform: rotate(45deg); }
+        .history-toggle { left: 16px; }
 
+        .modes { display: flex; justify-content: center; gap: 12px; margin-bottom: 10px; }
         .mode-btn {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            opacity: 0.6;
-            padding: 6px 10px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s ease;
+            background: none; border: none; color: var(--text-color); opacity: 0.4;
+            padding: 4px 8px; font-size: 0.8rem; font-family: var(--font-sans);
+            letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
+
+        /* Círculo */
+        .timer-container {
+            position: relative; width: 160px; height: 160px; margin: 10px auto 20px auto;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); width: 100%; height: 100%; }
+        .bg-circle { fill: none; stroke: rgba(125, 125, 125, 0.15); stroke-width: 3.5; }
+        .progress-circle {
+            fill: none; stroke: var(--accent-color); stroke-width: 3.5; stroke-linecap: round;
+            transition: stroke-dashoffset 0.2s linear, stroke 0.3s ease;
         }
 
-        .mode-btn.active {
-            opacity: 1;
-            font-weight: bold;
-            background: rgba(125, 125, 125, 0.15);
-        }
+        .timer-text-box { display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2; width: 80%; }
+        .status-text { font-family: var(--font-serif); font-style: italic; font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+        .timer-display { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 500; margin: 0; }
 
-        .timer {
-            font-size: 3.5rem;
-            font-weight: 600;
-            margin: 10px 0;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
+        .controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; }
         .main-btn {
-            background: var(--text-color);
-            color: var(--bg-color, #fff);
-            border: none;
-            padding: 8px 20px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: opacity 0.2s;
+            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
+            padding: 8px 24px; font-size: 0.8rem; font-family: var(--font-sans); letter-spacing: 0.5px;
+            border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
         }
-
-        /* Inverte a cor do botão principal no modo escuro */
-        @media (prefers-color-scheme: dark) {
-            .main-btn {
-                background: #e3e3e3;
-                color: #191919;
-            }
-        }
-
-        .main-btn:hover {
-            opacity: 0.9;
-        }
-
         .reset-btn {
-            background: transparent;
-            border: 1px solid rgba(125, 125, 125, 0.4);
-            color: var(--text-color);
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
+            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
+            width: 33px; height: 33px; font-size: 1rem; border-radius: 50%; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; transition: all 0.2s ease; padding: 0;
         }
+        .main-btn:hover, .reset-btn:hover { background: var(--text-color); color: var(--bg-card, #fff); }
 
-        .color-picker-container {
-            margin-bottom: 20px;
+        /* Planejador de Blocos por Fora */
+        .planner-section { border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; }
+        .planner-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+        .planner-input {
+            background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
+            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-sans);
+            outline: none; box-sizing: border-box; transition: border-color 0.2s;
         }
+        .planner-input:focus { border-color: var(--text-color); }
+        
+        #input-subject { flex-grow: 1; min-width: 0; }
+        #input-time { width: 55px; text-align: center; }
+        
+        .color-wrapper {
+            width: 31px; height: 31px; border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border-color); cursor: pointer;
+            display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.2s;
+        }
+        .color-wrapper:hover { transform: scale(1.05); }
+        .color-wrapper input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; padding: 0; background: none; }
+        
+        .add-btn {
+            background: var(--text-color); color: var(--bg-card, #fff); border: none;
+            width: 31px; height: 31px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;
+            display: flex; justify-content: center; align-items: center; transition: opacity 0.2s; flex-shrink: 0;
+        }
+        @media (prefers-color-scheme: dark) { .add-btn { background: #e3e3e3; color: #191919; } }
+        .add-btn:hover { opacity: 0.8; }
 
-        .color-label {
-            font-size: 0.75rem;
-            opacity: 0.7;
-            margin-bottom: 8px;
-            display: block;
-        }
+        /* Lista de Blocos */
+        .blocks-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; padding-right: 4px; }
+        .blocks-list::-webkit-scrollbar { width: 4px; }
+        .blocks-list::-webkit-scrollbar-thumb { background: rgba(125, 125, 125, 0.3); border-radius: 4px; }
 
-        .color-options {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
+        .block-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; padding: 6px; border-radius: 8px; transition: background 0.2s; }
+        .block-item.current-active { background: rgba(125, 125, 125, 0.08); font-weight: 500; }
+        .block-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(125, 125, 125, 0.2); border: 1px solid rgba(125, 125, 125, 0.15); flex-shrink: 0; transition: all 0.3s ease; }
+        
+        .block-info-wrapper { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .block-text-group { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+        .block-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .block-duration { font-size: 0.7rem; opacity: 0.6; white-space: nowrap; }
+        
+        .block-actions { display: flex; gap: 6px; opacity: 0.2; transition: opacity 0.2s; }
+        .block-item:hover .block-actions { opacity: 1; }
+        .action-btn { background: none; border: none; font-size: 0.8rem; cursor: pointer; padding: 0; transition: transform 0.2s; filter: grayscale(100%); }
+        .action-btn:hover { transform: scale(1.15); filter: none; }
 
-        .color-dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform 0.2s;
+        .inline-input {
+            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
+            border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-family: var(--font-sans);
+            width: 100px; outline: none;
         }
+        .inline-input.time { width: 40px; text-align: center; }
+        .empty-msg { font-size: 0.75rem; opacity: 0.5; text-align: center; font-style: italic; margin: 5px 0; }
 
-        .color-dot:hover {
-            transform: scale(1.2);
+        /* Painéis Genéricos (Configurações e Histórico) */
+        .overlay-panel {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-card); backdrop-filter: blur(15px); border-radius: 20px;
+            padding: 24px; box-sizing: border-box; text-align: left; z-index: 20; overflow-y: auto;
         }
+        .overlay-panel.open { display: block; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .panel-title { font-size: 1rem; font-family: var(--font-serif); font-weight: 600; }
+        .close-panel { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); opacity: 0.6; }
 
-        .color-dot.selected {
-            border-color: var(--text-color);
-            transform: scale(1.1);
+        /* Estilos do Histórico */
+        .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
+        .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
+        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; }
+        .history-item-subject { display: flex; align-items: center; gap: 6px; }
+        .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        
+        /* Botão de Limpar e Confirmação Integrada */
+        .clear-history-btn {
+            width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
+            padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-top: 10px; transition: all 0.2s;
         }
+        .clear-history-btn:hover { background: var(--accent-color); color: #fff; }
+        
+        .clear-confirm-box {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 107, 107, 0.08); border: 1px dashed var(--accent-color);
+            border-radius: 8px; padding: 8px 12px; margin-top: 10px;
+        }
+        .clear-confirm-text { font-size: 0.75rem; font-weight: 600; color: var(--accent-color); }
+        .clear-confirm-actions { display: flex; gap: 10px; }
+        .clear-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 0; font-size: 0.9rem; }
+        .clear-btn:hover { transform: scale(1.15); }
 
-        .cycles-container {
-            border-top: 1px solid rgba(125, 125, 125, 0.2);
-            padding-top: 15px;
+        /* Estilos das Configurações */
+        .setting-group { margin-bottom: 16px; }
+        .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
+        .setting-input {
+            width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
+            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-sans); box-sizing: border-box; outline: none;
         }
-
-        .cycles-label {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .cycles-track {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .cycle-bubble {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(125, 125, 125, 0.3);
-            transition: background 0.3s ease;
-        }
+        .flex-row { display: flex; gap: 10px; }
+        .flex-row > div { flex: 1; }
+        .color-setting { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .color-setting input[type="color"] { border: none; width: 30px; height: 30px; cursor: pointer; padding: 0; background: none; border-radius: 6px; }
+        .color-setting span { font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
     <div class="pomodoro-card">
+        <!-- Ícones Superiores -->
+        <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
+        <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
+
         <div class="modes">
-            <button class="mode-btn active" onclick="setMode('foco')">Foco</button>
-            <button class="mode-btn" onclick="setMode('curta')">Pausa Curta</button>
-            <button class="mode-btn" onclick="setMode('longa')">Pausa Longa</button>
+            <button class="mode-btn active" id="btn-foco" onclick="forceMode('foco')">Foco</button>
+            <button class="mode-btn" id="btn-curta" onclick="forceMode('curta')">Pausa Curta</button>
+            <button class="mode-btn" id="btn-longa" onclick="forceMode('longa')">Pausa Longa</button>
         </div>
 
-        <div class="timer" id="timer-display">25:00</div>
-
-        <div class="controls">
-            <button class="main-btn" id="start-btn" onclick="toggleTimer()">Iniciar</button>
-            <button class="reset-btn" onclick="resetTimer()">➔</button>
-        </div>
-
-        <div class="color-picker-container" id="picker-area">
-            <span class="color-label">Escolha a cor do bloco atual:</span>
-            <div class="color-options">
-                <!-- Cores em tons pastéis estéticos -->
-                <div class="color-dot selected" style="background-color: #ff6b6b;" onclick="selectColor(this, '#ff6b6b')"></div>
-                <div class="color-dot" style="background-color: #4dadf7;" onclick="selectColor(this, '#4dadf7')"></div>
-                <div class="color-dot" style="background-color: #51cf66;" onclick="selectColor(this, '#51cf66')"></div>
-                <div class="color-dot" style="background-color: #fcc419;" onclick="selectColor(this, '#fcc419')"></div>
-                <div class="color-dot" style="background-color: #cc5de8;" onclick="selectColor(this, '#cc5de8')"></div>
+        <div class="timer-container">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+                <circle class="bg-circle" cx="50" cy="50" r="45"></circle>
+                <circle class="progress-circle" id="progress-bar" cx="50" cy="50" r="45"></circle>
+            </svg>
+            <div class="timer-text-box">
+                <span class="status-text" id="current-subject-display">Sem blocos</span>
+                <h1 class="timer-display" id="timer-display">00:00</h1>
             </div>
         </div>
 
-        <div class="cycles-container">
-            <span class="cycles-label">Ciclos de Hoje</span>
-            <div class="cycles-track" id="cycles-track">
-                <div class="cycle-bubble"></div>
-                <div class="cycle-bubble"></div>
-                <div class="cycle-bubble"></div>
-                <div class="cycle-bubble"></div>
+        <div class="controls">
+            <button class="main-btn" id="start-btn" onclick="toggleTimer()">Iniciar</button>
+            <button class="reset-btn" onclick="resetTimer()" title="Reiniciar">↻</button>
+        </div>
+
+        <!-- Planejador de Blocos -->
+        <div class="planner-section">
+            <div class="planner-row">
+                <input type="text" id="input-subject" class="planner-input" placeholder="Nova matéria...">
+                <div class="color-wrapper" id="color-preview" style="background-color: #ff6b6b;" title="Cor do bloco">
+                    <input type="color" id="input-color" value="#ff6b6b" onchange="updatePreviewColor(this.value)">
+                </div>
+                <input type="number" id="input-time" class="planner-input" value="25" min="1" title="Minutos">
+                <button class="add-btn" onclick="addNewBlock()" title="Adicionar Bloco">+</button>
+            </div>
+            
+            <div class="blocks-list" id="blocks-list">
+                <div class="empty-msg" id="empty-msg">Seu cronograma de estudos aparecerá aqui.</div>
+            </div>
+        </div>
+
+        <!-- Painel de Histórico -->
+        <div class="overlay-panel" id="history-panel">
+            <div class="panel-header">
+                <span class="panel-title">Histórico de Estudos</span>
+                <button class="close-panel" onclick="toggleHistory()">✖</button>
+            </div>
+            <div id="history-content">
+                <!-- O Javascript vai inserir os dias aqui -->
+            </div>
+            <!-- Div para a ação integrada de limpar histórico -->
+            <div id="clear-history-wrapper"></div>
+        </div>
+
+        <!-- Painel de Configurações Genéricas -->
+        <div class="overlay-panel" id="settings-panel">
+            <div class="panel-header">
+                <span class="panel-title">Configurações Gerais</span>
+                <button class="close-panel" onclick="toggleSettings()">✖</button>
+            </div>
+            <div class="setting-group flex-row">
+                <div>
+                    <span class="setting-label">Pausa Curta (min)</span>
+                    <input type="number" id="input-break-short" class="setting-input" value="5" min="1" onchange="updateLivePause('curta')">
+                </div>
+                <div>
+                    <span class="setting-label">Pausa Longa (min)</span>
+                    <input type="number" id="input-break-long" class="setting-input" value="15" min="1" onchange="updateLivePause('longa')">
+                </div>
+            </div>
+            <div class="setting-group">
+                <span class="setting-label">🎵 Som de Alarme (URL MP3/WAV)</span>
+                <input type="text" id="input-audio-url" class="setting-input" placeholder="Cole o link do áudio aqui...">
+            </div>
+            <div class="setting-group">
+                <span class="setting-label">🖼️ Imagem de Fundo (URL)</span>
+                <input type="text" id="bg-url" class="setting-input" placeholder="Cole o link da imagem aqui..." onchange="updateBackground(this.value)">
+            </div>
+            <div class="setting-group">
+                <span class="setting-label">🎨 Cores do Design do App</span>
+                <div class="color-setting">
+                    <input type="color" id="theme-text-color" value="#37352f" onchange="updateThemeText(this.value)">
+                    <span>Cor do Texto e Botões</span>
+                </div>
+                <div class="color-setting">
+                    <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg(this.value)">
+                    <span>Cor do Fundo do Card</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Áudio de alarme sutil usando API nativa do navegador (Beep) -->
     <script>
         let timer;
         let isRunning = false;
-        let currentMode = 'foco'; // foco, curta, longa
-        let timeLeft = 25 * 60;
-        let selectedColor = '#ff6b6b';
-        let completedCycles = 0;
+        let timeLeft = 0;
+        let totalSecondsCurrent = 0;
+        
+        let currentMode = 'foco'; 
+        let blocksQueue = [];
+        let currentBlockIndex = 0;
+        let completedFocosCount = 0; 
+        
+        let editingBlockIndex = -1;
+        let deletingBlockIndex = -1;
 
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
-        const bubbles = document.querySelectorAll('.cycle-bubble');
-        const pickerArea = document.getElementById('picker-area');
+        const subjectDisplay = document.getElementById('current-subject-display');
+        const progressBar = document.getElementById('progress-bar');
+        
+        const settingsPanel = document.getElementById('settings-panel');
+        const historyPanel = document.getElementById('history-panel');
+        const historyContent = document.getElementById('history-content');
+        
+        const blocksListContainer = document.getElementById('blocks-list');
+        const emptyMsg = document.getElementById('empty-msg');
+        
+        const inputSubject = document.getElementById('input-subject');
+        const inputColor = document.getElementById('input-color');
+        const inputTime = document.getElementById('input-time');
+        const colorPreview = document.getElementById('color-preview');
+        
+        const inputBreakShort = document.getElementById('input-break-short');
+        const inputBreakLong = document.getElementById('input-break-long');
+        const inputAudioUrl = document.getElementById('input-audio-url');
 
-        const times = {
-            foco: 25 * 60,
-            curta: 5 * 60,
-            longa: 15 * 60
-        };
+        const radius = 45;
+        const circumference = 2 * Math.PI * radius;
+        progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressBar.style.strokeDashoffset = circumference;
 
+        const customAudio = new Audio();
+
+        // --------------------------------------------------------
+        // SISTEMA DE HISTÓRICO E LIMPEZA INLINE (SEM ALERTAS NATIVOS)
+        // --------------------------------------------------------
+        function saveToHistory(subject, color, durationInSeconds) {
+            const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
+            
+            if (!history[dateStr]) history[dateStr] = {};
+            if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color };
+            
+            history[dateStr][subject].minutes += Math.round(durationInSeconds / 60);
+            localStorage.setItem('pomodoroHistory', JSON.stringify(history));
+        }
+
+        function renderHistory() {
+            let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
+            const dates = Object.keys(history).reverse(); 
+            const clearWrapper = document.getElementById('clear-history-wrapper');
+            
+            historyContent.innerHTML = '';
+            
+            if (dates.length === 0) {
+                historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda. Finalize um bloco de foco para ver os dados!</div>';
+                clearWrapper.style.display = 'none'; // Esconde o botão se não há histórico
+                return;
+            }
+            
+            clearWrapper.style.display = 'block';
+            resetClearHistoryUI(); // Sempre reseta o botão para o estado padrão ao abrir
+            
+            dates.forEach(date => {
+                let html = `<div class="history-day">
+                                <span class="history-date-title">${date}</span>`;
+                for (let subj in history[date]) {
+                    const data = history[date][subj];
+                    html += `
+                        <div class="history-item">
+                            <div class="history-item-subject">
+                                <span class="history-item-dot" style="background-color: ${data.color}"></span>
+                                <span>${subj}</span>
+                            </div>
+                            <span><strong>${data.minutes}</strong> min</span>
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+                historyContent.innerHTML += html;
+            });
+        }
+
+        // --- Funções da Limpeza Integrada ---
+        function showClearConfirm() {
+            const wrapper = document.getElementById('clear-history-wrapper');
+            wrapper.innerHTML = `
+                <div class="clear-confirm-box">
+                    <span class="clear-confirm-text">Excluir todo o histórico?</span>
+                    <div class="clear-confirm-actions">
+                        <button class="clear-btn" onclick="executeClearHistory()" title="Sim, apagar">✅</button>
+                        <button class="clear-btn" onclick="resetClearHistoryUI()" title="Cancelar">❌</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function executeClearHistory() {
+            localStorage.removeItem('pomodoroHistory');
+            renderHistory();
+        }
+
+        function resetClearHistoryUI() {
+            const wrapper = document.getElementById('clear-history-wrapper');
+            wrapper.innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`;
+        }
+
+        function toggleHistory() {
+            if (!historyPanel.classList.contains('open')) renderHistory();
+            historyPanel.classList.toggle('open');
+            settingsPanel.classList.remove('open');
+        }
+
+        function toggleSettings() {
+            settingsPanel.classList.toggle('open');
+            historyPanel.classList.remove('open');
+        }
+
+        // --------------------------------------------------------
+        // SISTEMA PRINCIPAL (CRONÔMETRO E BLOCOS)
+        // --------------------------------------------------------
         function updateDisplay() {
+            if (blocksQueue.length === 0 && currentMode === 'foco') {
+                display.textContent = "00:00"; progressBar.style.strokeDashoffset = circumference; return;
+            }
             const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
             const seconds = (timeLeft % 60).toString().padStart(2, '0');
             display.textContent = `${minutes}:${seconds}`;
+            if (totalSecondsCurrent > 0) {
+                const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference;
+                progressBar.style.strokeDashoffset = offset;
+            }
         }
 
-        function setMode(mode) {
-            clearInterval(timer);
-            isRunning = false;
-            currentMode = mode;
-            timeLeft = times[mode];
-            startBtn.textContent = 'Iniciar';
-            
-            // Atualiza botões ativos
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Esconde o seletor de cores se for pausa
-            if (mode !== 'foco') {
-                pickerArea.style.display = 'none';
-            } else {
-                pickerArea.style.display = 'block';
-            }
+        function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
+        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); }
+        function updateThemeBg(color) {
+            let hex = color.replace('#', '');
+            let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
+            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, 0.85)`);
+        }
 
-            updateDisplay();
+        function addNewBlock() {
+            const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
+            const color = inputColor.value;
+            const minutes = parseInt(inputTime.value) || 25;
+
+            blocksQueue.push({ id: Date.now(), subject: subject, color: color, duration: minutes * 60, completed: false });
+            inputSubject.value = ""; renderBlocksList();
+            
+            if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
+        }
+
+        function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
+        function saveEdit(idx) {
+            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim();
+            const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value);
+            
+            if (newSubj !== "") blocksQueue[idx].subject = newSubj;
+            if (newTime > 0) {
+                blocksQueue[idx].duration = newTime * 60;
+                if (idx === currentBlockIndex && currentMode === 'foco') {
+                    totalSecondsCurrent = blocksQueue[idx].duration;
+                    if (!isRunning) timeLeft = blocksQueue[idx].duration; updateDisplay();
+                }
+            }
+            if (idx === currentBlockIndex && currentMode === 'foco') subjectDisplay.textContent = blocksQueue[idx].subject;
+            editingBlockIndex = -1; renderBlocksList();
+        }
+        function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
+
+        function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
+        function confirmDelete(idx) {
+            blocksQueue.splice(idx, 1);
+            if (idx < currentBlockIndex) currentBlockIndex--;
+            else if (idx === currentBlockIndex) { clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
+            deletingBlockIndex = -1; renderBlocksList();
+            if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; }
+        }
+        function cancelDelete() { deletingBlockIndex = -1; renderBlocksList(); }
+
+        function forceMode(mode) {
+            clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
+            if (mode === 'foco') {
+                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) loadBlock(currentBlockIndex);
+                else { currentMode = 'foco'; switchModeUI('foco'); subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); }
+            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); }
+        }
+
+        function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
+
+        function loadBlock(index) {
+            if (index >= blocksQueue.length) {
+                clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
+                subjectDisplay.textContent = "Tudo Concluído!"; timeLeft = 0; currentBlockIndex = index; updateDisplay(); return;
+            }
+            currentBlockIndex = index; currentMode = 'foco'; switchModeUI('foco');
+            const block = blocksQueue[index];
+            timeLeft = block.duration; totalSecondsCurrent = block.duration; subjectDisplay.textContent = block.subject;
+            document.documentElement.style.setProperty('--accent-color', block.color);
+            updateDisplay(); renderBlocksList();
+        }
+
+        function startPausa(type) {
+            currentMode = type; switchModeUI(type);
+            const userMinutes = type === 'curta' ? (parseInt(inputBreakShort.value) || 5) : (parseInt(inputBreakLong.value) || 15);
+            timeLeft = userMinutes * 60; totalSecondsCurrent = userMinutes * 60;
+            subjectDisplay.textContent = type === 'curta' ? "Pausa Curta" : "Pausa Longa";
+            document.documentElement.style.setProperty('--accent-color', type === 'curta' ? '#8ce99a' : '#74c0fc');
+            updateDisplay(); renderBlocksList();
+        }
+
+        function switchModeUI(mode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+        }
+
+        function renderBlocksList() {
+            if (blocksQueue.length > 0) emptyMsg.style.display = "none"; else emptyMsg.style.display = "block";
+            blocksListContainer.innerHTML = "";
+            
+            blocksQueue.forEach((block, idx) => {
+                const item = document.createElement('div');
+                const isActive = (idx === currentBlockIndex && currentMode === 'foco' && !block.completed);
+                item.className = `block-item ${isActive ? 'current-active' : ''}`;
+                
+                const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)';
+                const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
+                let contentHTML = '';
+
+                if (editingBlockIndex === idx) {
+                    contentHTML = `
+                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
+                        <div class="block-info-wrapper">
+                            <div class="block-text-group" style="gap: 4px;">
+                                <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
+                                <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
+                            </div>
+                            <div class="block-actions" style="opacity: 1;">
+                                <button class="action-btn" onclick="saveEdit(${idx})" title="Salvar">✅</button>
+                                <button class="action-btn" onclick="cancelEdit()" title="Cancelar">❌</button>
+                            </div>
+                        </div>`;
+                } else if (deletingBlockIndex === idx) {
+                    contentHTML = `
+                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
+                        <div class="block-info-wrapper">
+                            <span class="block-name" style="color: var(--accent-color); font-weight: 600;">Remover bloco?</span>
+                            <div class="block-actions" style="opacity: 1;">
+                                <button class="action-btn" onclick="confirmDelete(${idx})" title="Sim">✅</button>
+                                <button class="action-btn" onclick="cancelDelete()" title="Cancelar">❌</button>
+                            </div>
+                        </div>`;
+                } else {
+                    contentHTML = `
+                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
+                        <div class="block-info-wrapper">
+                            <div class="block-text-group">
+                                <span class="block-name">${block.subject}</span>
+                                <span class="block-duration">${block.duration / 60} min</span>
+                            </div>
+                            <div class="block-actions">
+                                <button class="action-btn" onclick="startEdit(${idx})" title="Editar">✏️</button>
+                                <button class="action-btn" onclick="startDelete(${idx})" title="Remover">✖</button>
+                            </div>
+                        </div>`;
+                }
+                item.innerHTML = contentHTML; blocksListContainer.appendChild(item);
+            });
         }
 
         function toggleTimer() {
-            if (isRunning) {
-                clearInterval(timer);
-                startBtn.textContent = 'Iniciar';
-            } else {
-                timer = setInterval(countdown, 1000);
-                startBtn.textContent = 'Pausar';
-            }
+            if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
+            if (isRunning) { clearInterval(timer); startBtn.textContent = 'Iniciar'; } else { timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; }
             isRunning = !isRunning;
         }
 
         function countdown() {
-            if (timeLeft > 0) {
-                timeLeft--;
-                updateDisplay();
-            } else {
-                clearInterval(timer);
-                isRunning = false;
-                startBtn.textContent = 'Iniciar';
-                playAlarm();
-                
+            if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
+            else {
+                clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
                 if (currentMode === 'foco') {
-                    handleFocusCompleted();
-                } else {
-                    setMode('foco');
-                }
+                    if(blocksQueue[currentBlockIndex]) { 
+                        blocksQueue[currentBlockIndex].completed = true; 
+                        saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration);
+                    }
+                    completedFocosCount++; renderBlocksList();
+                    if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
+                } else { loadBlock(currentBlockIndex + 1); }
             }
         }
 
         function resetTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            timeLeft = times[currentMode];
-            startBtn.textContent = 'Iniciar';
-            updateDisplay();
+            if (blocksQueue.length === 0 && currentMode === 'foco') return;
+            clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar';
+            timeLeft = totalSecondsCurrent; updateDisplay();
         }
 
-        function selectColor(element, color) {
-            document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedColor = color;
-        }
-
-        function handleFocusCompleted() {
-            if (completedCycles < 4) {
-                // Pinta a bolinha atual com a cor selecionada
-                bubbles[completedCycles].style.backgroundColor = selectedColor;
-                completedCycles++;
-            }
-
-            // Regra do Pomodoro Clássico
-            if (completedCycles === 4) {
-                alert("Parabéns! Você completou 4 ciclos. Hora de uma pausa longa!");
-                setMode('longa');
-                // Opcional: resetar as bolinhas após a pausa longa se desejar
-            } else {
-                setMode('curta');
-            }
-        }
+        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; }
 
         function playAlarm() {
-            // Cria um som eletrônico suave direto no navegador para não precisar de arquivos externos
-            const context = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(440, context.currentTime); // Nota Lá
-            gain.gain.setValueAtTime(0.3, context.currentTime);
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-            oscillator.start();
-            oscillator.stop(context.currentTime + 0.5);
+            const url = inputAudioUrl.value.trim();
+            if (url) { customAudio.src = url; customAudio.play().catch(e => { playOscillator(); }); } 
+            else { playOscillator(); }
+        }
+
+        function playOscillator() {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Função para tocar um único bipe
+                function playBeep(startTime) {
+                    const oscillator = context.createOscillator(); 
+                    const gain = context.createGain();
+                    
+                    oscillator.type = 'sine'; 
+                    // Frequência mais alta (mais agudo)
+                    oscillator.frequency.setValueAtTime(880.00, startTime); 
+                    
+                    // Volume mais alto (0.5 em vez de 0.15)
+                    gain.gain.setValueAtTime(0.5, startTime);
+                    
+                    oscillator.connect(gain); 
+                    gain.connect(context.destination);
+                    
+                    oscillator.start(startTime); 
+                    // Duração de 0.8 segundos (mais longo)
+                    oscillator.stop(startTime + 0.8); 
+                }
+
+                const now = context.currentTime;
+                // Toca três bipes seguidos com intervalo de 1 segundo
+                playBeep(now);
+                playBeep(now + 1.0);
+                playBeep(now + 2.0);
+
+            } catch (e) { 
+                console.log("Áudio bloqueado pelo navegador. O usuário precisa interagir com a página primeiro."); 
+            }
         }
     </script>
 </body>
