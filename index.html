@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
-    <!-- Fontes elegantes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -180,7 +179,6 @@
         .history-item-subject { display: flex; align-items: center; gap: 6px; }
         .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         
-        /* Botão de Limpar e Confirmação Integrada */
         .clear-history-btn {
             width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
             padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-top: 10px; transition: all 0.2s;
@@ -206,15 +204,16 @@
         }
         .flex-row { display: flex; gap: 10px; }
         .flex-row > div { flex: 1; }
+        
         .color-setting { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
         .color-setting input[type="color"] { border: none; width: 30px; height: 30px; cursor: pointer; padding: 0; background: none; border-radius: 6px; }
-        .color-setting span { font-size: 0.75rem; }
+        .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
+        .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
     </style>
 </head>
 <body>
 
     <div class="pomodoro-card">
-        <!-- Ícones Superiores -->
         <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
         <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
 
@@ -240,7 +239,6 @@
             <button class="reset-btn" onclick="resetTimer()" title="Reiniciar">↻</button>
         </div>
 
-        <!-- Planejador de Blocos -->
         <div class="planner-section">
             <div class="planner-row">
                 <input type="text" id="input-subject" class="planner-input" placeholder="Nova matéria...">
@@ -256,20 +254,16 @@
             </div>
         </div>
 
-        <!-- Painel de Histórico -->
         <div class="overlay-panel" id="history-panel">
             <div class="panel-header">
                 <span class="panel-title">Histórico de Estudos</span>
                 <button class="close-panel" onclick="toggleHistory()">✖</button>
             </div>
             <div id="history-content">
-                <!-- O Javascript vai inserir os dias aqui -->
-            </div>
-            <!-- Div para a ação integrada de limpar histórico -->
+                </div>
             <div id="clear-history-wrapper"></div>
         </div>
 
-        <!-- Painel de Configurações Genéricas -->
         <div class="overlay-panel" id="settings-panel">
             <div class="panel-header">
                 <span class="panel-title">Configurações Gerais</span>
@@ -293,15 +287,20 @@
                 <span class="setting-label">🖼️ Imagem de Fundo (URL)</span>
                 <input type="text" id="bg-url" class="setting-input" placeholder="Cole o link da imagem aqui..." onchange="updateBackground(this.value)">
             </div>
+            
             <div class="setting-group">
-                <span class="setting-label">🎨 Cores do Design do App</span>
+                <span class="setting-label">🎨 Cores e Estilo do Card</span>
                 <div class="color-setting">
                     <input type="color" id="theme-text-color" value="#37352f" onchange="updateThemeText(this.value)">
                     <span>Cor do Texto e Botões</span>
                 </div>
                 <div class="color-setting">
-                    <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg(this.value)">
+                    <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg()">
                     <span>Cor do Fundo do Card</span>
+                </div>
+                <div class="color-setting" style="margin-top: 10px;">
+                    <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.85" onchange="updateThemeBg()" oninput="updateThemeBg()">
+                    <span>Transparência do Fundo</span>
                 </div>
             </div>
         </div>
@@ -350,7 +349,7 @@
         const customAudio = new Audio();
 
         // --------------------------------------------------------
-        // SISTEMA DE HISTÓRICO E LIMPEZA INLINE (SEM ALERTAS NATIVOS)
+        // SISTEMA DE HISTÓRICO E LIMPEZA INLINE
         // --------------------------------------------------------
         function saveToHistory(subject, color, durationInSeconds) {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -372,12 +371,12 @@
             
             if (dates.length === 0) {
                 historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda. Finalize um bloco de foco para ver os dados!</div>';
-                clearWrapper.style.display = 'none'; // Esconde o botão se não há histórico
+                clearWrapper.style.display = 'none';
                 return;
             }
             
             clearWrapper.style.display = 'block';
-            resetClearHistoryUI(); // Sempre reseta o botão para o estado padrão ao abrir
+            resetClearHistoryUI(); 
             
             dates.forEach(date => {
                 let html = `<div class="history-day">
@@ -399,7 +398,6 @@
             });
         }
 
-        // --- Funções da Limpeza Integrada ---
         function showClearConfirm() {
             const wrapper = document.getElementById('clear-history-wrapper');
             wrapper.innerHTML = `
@@ -435,7 +433,7 @@
         }
 
         // --------------------------------------------------------
-        // SISTEMA PRINCIPAL (CRONÔMETRO E BLOCOS)
+        // SISTEMA PRINCIPAL E ESTILIZAÇÃO
         // --------------------------------------------------------
         function updateDisplay() {
             if (blocksQueue.length === 0 && currentMode === 'foco') {
@@ -451,11 +449,20 @@
         }
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
+        
         function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); }
-        function updateThemeBg(color) {
+        
+        // Nova função combinando Cor e Transparência
+        function updateThemeBg() {
+            const color = document.getElementById('theme-bg-color').value;
+            const opacity = document.getElementById('theme-bg-opacity').value;
+            
             let hex = color.replace('#', '');
-            let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
-            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, 0.85)`);
+            let r = parseInt(hex.substring(0, 2), 16); 
+            let g = parseInt(hex.substring(2, 4), 16); 
+            let b = parseInt(hex.substring(4, 6), 16);
+            
+            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
         }
 
         function addNewBlock() {
@@ -626,35 +633,24 @@
             try {
                 const context = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Função para tocar um único bipe
                 function playBeep(startTime) {
                     const oscillator = context.createOscillator(); 
                     const gain = context.createGain();
-                    
                     oscillator.type = 'sine'; 
-                    // Frequência mais alta (mais agudo)
                     oscillator.frequency.setValueAtTime(880.00, startTime); 
-                    
-                    // Volume mais alto (0.5 em vez de 0.15)
                     gain.gain.setValueAtTime(0.5, startTime);
-                    
                     oscillator.connect(gain); 
                     gain.connect(context.destination);
-                    
                     oscillator.start(startTime); 
-                    // Duração de 0.8 segundos (mais longo)
                     oscillator.stop(startTime + 0.8); 
                 }
 
                 const now = context.currentTime;
-                // Toca três bipes seguidos com intervalo de 1 segundo
                 playBeep(now);
                 playBeep(now + 1.0);
                 playBeep(now + 2.0);
 
-            } catch (e) { 
-                console.log("Áudio bloqueado pelo navegador. O usuário precisa interagir com a página primeiro."); 
-            }
+            } catch (e) { console.log("Áudio bloqueado pelo navegador. O usuário precisa interagir com a página primeiro."); }
         }
     </script>
 </body>
