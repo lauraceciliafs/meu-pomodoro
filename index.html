@@ -304,7 +304,7 @@
                     <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg()">
                     <span>Cor do Fundo do Card</span>
                 </div>
-                <!-- NOVAS OPÇÕES DE CORES DAS PAUSAS -->
+                <!-- Cores das Pausas -->
                 <div class="color-setting">
                     <input type="color" id="theme-short-break-color" value="#8ce99a" onchange="updateShortBreakColor(this.value)">
                     <span>Cor da Pausa Curta</span>
@@ -336,7 +336,6 @@
         let editingBlockIndex = -1;
         let deletingBlockIndex = -1;
         
-        // Novas variáveis para armazenar as cores das pausas
         let shortBreakColor = '#8ce99a';
         let longBreakColor = '#74c0fc';
 
@@ -367,6 +366,16 @@
         progressBar.style.strokeDashoffset = circumference;
 
         const customAudio = new Audio();
+
+        // --------------------------------------------------------
+        // FUNÇÃO DE FORMATAR TEMPO (Ex: 67 -> 1h 7min)
+        // --------------------------------------------------------
+        function formatMinutesDisplay(totalMins) {
+            if (totalMins < 60) return `${totalMins} min`;
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            return m > 0 ? `${h}h ${m}min` : `${h}h`;
+        }
 
         // --------------------------------------------------------
         // SISTEMA DE HISTÓRICO
@@ -403,13 +412,15 @@
                                 <span class="history-date-title">${date}</span>`;
                 for (let subj in history[date]) {
                     const data = history[date][subj];
+                    // Formata a exibição do histórico
+                    const displayTime = formatMinutesDisplay(data.minutes);
                     html += `
                         <div class="history-item">
                             <div class="history-item-subject">
                                 <span class="history-item-dot" style="background-color: ${data.color}"></span>
                                 <span>${subj}</span>
                             </div>
-                            <span><strong>${data.minutes}</strong> min</span>
+                            <span><strong>${displayTime}</strong></span>
                         </div>
                     `;
                 }
@@ -483,7 +494,6 @@
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
         }
 
-        // Funções para atualizar as cores das pausas
         function updateShortBreakColor(color) {
             shortBreakColor = color;
             if (currentMode === 'curta') {
@@ -507,6 +517,15 @@
             inputSubject.value = ""; renderBlocksList();
             
             if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
+        }
+
+        // NOVO: Função para o usuário escolher qual bloco estudar agora
+        function playBlock(idx) {
+            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; // Evita clicar enquanto edita
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.textContent = 'Iniciar';
+            loadBlock(idx);
         }
 
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
@@ -565,7 +584,6 @@
             timeLeft = userMinutes * 60; totalSecondsCurrent = userMinutes * 60;
             subjectDisplay.textContent = type === 'curta' ? "Pausa Curta" : "Pausa Longa";
             
-            // Usando as variáveis personalizadas para a cor da pausa
             document.documentElement.style.setProperty('--accent-color', type === 'curta' ? shortBreakColor : longBreakColor);
             
             updateDisplay(); renderBlocksList();
@@ -589,12 +607,16 @@
                 const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
                 let contentHTML = '';
 
+                // Formatação do tempo na lista de blocos (Ex: 67 min -> 1h 7min)
+                const displayDuration = formatMinutesDisplay(block.duration / 60);
+
                 if (editingBlockIndex === idx) {
                     contentHTML = `
                         <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
                         <div class="block-info-wrapper">
                             <div class="block-text-group" style="gap: 4px;">
                                 <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
+                                <!-- O input continua apenas com números (minutos totais) para facilitar a edição -->
                                 <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
                             </div>
                             <div class="block-actions" style="opacity: 1;">
@@ -618,9 +640,11 @@
                         <div class="block-info-wrapper">
                             <div class="block-text-group">
                                 <span class="block-name">${block.subject}</span>
-                                <span class="block-duration">${block.duration / 60} min</span>
+                                <span class="block-duration">${displayDuration}</span>
                             </div>
                             <div class="block-actions">
+                                <!-- NOVO: Botão de Play para iniciar esta matéria imediatamente -->
+                                <button class="action-btn" onclick="playBlock(${idx})" title="Estudar esta matéria">▶️</button>
                                 <button class="action-btn" onclick="startEdit(${idx})" title="Editar">✏️</button>
                                 <button class="action-btn" onclick="startDelete(${idx})" title="Remover">✖</button>
                             </div>
@@ -686,7 +710,7 @@
                 playBeep(now + 1.0);
                 playBeep(now + 2.0);
 
-            } catch (e) { console.log("Áudio bloqueado pelo navegador. O usuário precisa interagir com a página primeiro."); }
+            } catch (e) { console.log("Áudio bloqueado pelo navegador."); }
         }
     </script>
 </body>
