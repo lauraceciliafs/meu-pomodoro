@@ -323,13 +323,18 @@
     </div>
 
     <script>
-        let timer;
+       let timer;
         let isRunning = false;
         let timeLeft = 0;
         let totalSecondsCurrent = 0;
         
+        // Fila fixa de matérias (Carrega isso por padrão toda vez que atualizar)
+        let blocksQueue = JSON.parse(localStorage.getItem('pomodoroQueue')) || [
+            { id: 1, subject: "Desenvolvimento Web", color: "#ff6b6b", duration: 45 * 60, completed: false },
+            { id: 2, subject: "Estrutura de Dados", color: "#4dabf7", duration: 30 * 60, completed: false },
+            { id: 3, subject: "Inglês", color: "#8ce99a", duration: 25 * 60, completed: false }
+        ];
         let currentMode = 'foco'; 
-        let blocksQueue = [];
         let currentBlockIndex = 0;
         let completedFocosCount = 0; 
         
@@ -366,6 +371,13 @@
         progressBar.style.strokeDashoffset = circumference;
 
         const customAudio = new Audio();
+
+        // --------------------------------------------------------
+        // SALVAR A FILA DE BLOCOS (NOVIDADE AQUI!)
+        // --------------------------------------------------------
+        function saveQueue() {
+            localStorage.setItem('pomodoroQueue', JSON.stringify(blocksQueue));
+        }
 
         // --------------------------------------------------------
         // FUNÇÃO DE FORMATAR TEMPO (Ex: 67 -> 1h 7min)
@@ -412,7 +424,6 @@
                                 <span class="history-date-title">${date}</span>`;
                 for (let subj in history[date]) {
                     const data = history[date][subj];
-                    // Formata a exibição do histórico
                     const displayTime = formatMinutesDisplay(data.minutes);
                     html += `
                         <div class="history-item">
@@ -514,14 +525,15 @@
             const minutes = parseInt(inputTime.value) || 25;
 
             blocksQueue.push({ id: Date.now(), subject: subject, color: color, duration: minutes * 60, completed: false });
+            saveQueue(); // Salva a fila atualizada
+
             inputSubject.value = ""; renderBlocksList();
             
             if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
         }
 
-        // NOVO: Função para o usuário escolher qual bloco estudar agora
         function playBlock(idx) {
-            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; // Evita clicar enquanto edita
+            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return;
             clearInterval(timer);
             isRunning = false;
             startBtn.textContent = 'Iniciar';
@@ -542,6 +554,9 @@
                 }
             }
             if (idx === currentBlockIndex && currentMode === 'foco') subjectDisplay.textContent = blocksQueue[idx].subject;
+            
+            saveQueue(); // Salva a fila atualizada
+
             editingBlockIndex = -1; renderBlocksList();
         }
         function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
@@ -551,6 +566,9 @@
             blocksQueue.splice(idx, 1);
             if (idx < currentBlockIndex) currentBlockIndex--;
             else if (idx === currentBlockIndex) { clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
+            
+            saveQueue(); // Salva a fila atualizada
+
             deletingBlockIndex = -1; renderBlocksList();
             if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; }
         }
@@ -607,7 +625,6 @@
                 const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
                 let contentHTML = '';
 
-                // Formatação do tempo na lista de blocos (Ex: 67 min -> 1h 7min)
                 const displayDuration = formatMinutesDisplay(block.duration / 60);
 
                 if (editingBlockIndex === idx) {
@@ -616,7 +633,6 @@
                         <div class="block-info-wrapper">
                             <div class="block-text-group" style="gap: 4px;">
                                 <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
-                                <!-- O input continua apenas com números (minutos totais) para facilitar a edição -->
                                 <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
                             </div>
                             <div class="block-actions" style="opacity: 1;">
@@ -643,7 +659,6 @@
                                 <span class="block-duration">${displayDuration}</span>
                             </div>
                             <div class="block-actions">
-                                <!-- NOVO: Botão de Play para iniciar esta matéria imediatamente -->
                                 <button class="action-btn" onclick="playBlock(${idx})" title="Estudar esta matéria">▶️</button>
                                 <button class="action-btn" onclick="startEdit(${idx})" title="Editar">✏️</button>
                                 <button class="action-btn" onclick="startDelete(${idx})" title="Remover">✖</button>
@@ -668,6 +683,7 @@
                     if(blocksQueue[currentBlockIndex]) { 
                         blocksQueue[currentBlockIndex].completed = true; 
                         saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration);
+                        saveQueue(); // Salva para registrar a bolinha pintada
                     }
                     completedFocosCount++; renderBlocksList();
                     if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
@@ -692,7 +708,6 @@
         function playOscillator() {
             try {
                 const context = new (window.AudioContext || window.webkitAudioContext)();
-                
                 function playBeep(startTime) {
                     const oscillator = context.createOscillator(); 
                     const gain = context.createGain();
@@ -704,14 +719,27 @@
                     oscillator.start(startTime); 
                     oscillator.stop(startTime + 0.8); 
                 }
-
                 const now = context.currentTime;
-                playBeep(now);
-                playBeep(now + 1.0);
-                playBeep(now + 2.0);
-
+                playBeep(now); playBeep(now + 1.0); playBeep(now + 2.0);
             } catch (e) { console.log("Áudio bloqueado pelo navegador."); }
         }
+
+        // --------------------------------------------------------
+        // INICIALIZAÇÃO DA PÁGINA
+        // --------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBlocksList();
+            // Se houver blocos na fila quando a página abrir, ele puxa o primeiro bloco não concluído
+            if (blocksQueue.length > 0) {
+                let firstUncompleted = blocksQueue.findIndex(b => !b.completed);
+                if (firstUncompleted !== -1) {
+                    loadBlock(firstUncompleted);
+                } else {
+                    // Se todos já estiverem concluídos, puxa o primeiro da lista
+                    loadBlock(0);
+                }
+            }
+        });
     </script>
 </body>
 </html>
