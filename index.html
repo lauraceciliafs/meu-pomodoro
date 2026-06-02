@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
-    <!-- Fontes elegantes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -91,7 +90,7 @@
 
         .timer-text-box { display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2; width: 80%; }
         .status-text { font-family: var(--font-serif); font-style: italic; font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
-        .timer-display { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 500; margin: 0; }
+        .timer-display { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 500; margin: 0; transition: font-size 0.2s ease; }
 
         .controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; }
         .main-btn {
@@ -157,7 +156,7 @@
         .inline-input {
             background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
             border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-family: var(--font-sans);
-            width: 100px; outline: none;
+            width: 90px; outline: none;
         }
         .inline-input.time { width: 40px; text-align: center; }
         .empty-msg { font-size: 0.75rem; opacity: 0.5; text-align: center; font-style: italic; margin: 5px 0; }
@@ -173,7 +172,7 @@
         .panel-title { font-size: 1rem; font-family: var(--font-serif); font-weight: 600; }
         .close-panel { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); opacity: 0.6; }
 
-        /* Estilos do Histórico */
+        /* Histórico */
         .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
         .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
         .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; }
@@ -196,7 +195,7 @@
         .clear-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 0; font-size: 0.9rem; }
         .clear-btn:hover { transform: scale(1.15); }
 
-        /* Estilos das Configurações */
+        /* Configurações */
         .setting-group { margin-bottom: 16px; }
         .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
         .setting-input {
@@ -215,7 +214,6 @@
 <body>
 
     <div class="pomodoro-card">
-        <!-- Ícones Superiores -->
         <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
         <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
 
@@ -241,7 +239,6 @@
             <button class="reset-btn" onclick="resetTimer()" title="Reiniciar">↻</button>
         </div>
 
-        <!-- Planejador de Blocos -->
         <div class="planner-section">
             <div class="planner-row">
                 <input type="text" id="input-subject" class="planner-input" placeholder="Nova matéria...">
@@ -257,19 +254,15 @@
             </div>
         </div>
 
-        <!-- Painel de Histórico -->
         <div class="overlay-panel" id="history-panel">
             <div class="panel-header">
                 <span class="panel-title">Histórico de Estudos</span>
                 <button class="close-panel" onclick="toggleHistory()">✖</button>
             </div>
-            <div id="history-content">
-                <!-- O Javascript vai inserir os dias aqui -->
-            </div>
+            <div id="history-content"></div>
             <div id="clear-history-wrapper"></div>
         </div>
 
-        <!-- Painel de Configurações Genéricas -->
         <div class="overlay-panel" id="settings-panel">
             <div class="panel-header">
                 <span class="panel-title">Configurações Gerais</span>
@@ -287,7 +280,7 @@
             </div>
             <div class="setting-group">
                 <span class="setting-label">🎵 Som de Alarme (URL MP3/WAV)</span>
-                <input type="text" id="input-audio-url" class="setting-input" placeholder="Cole o link do áudio aqui...">
+                <input type="text" id="input-audio-url" class="setting-input" placeholder="Cole o link do áudio aqui..." onchange="updateAudioUrl(this.value)">
             </div>
             <div class="setting-group">
                 <span class="setting-label">🖼️ Imagem de Fundo (URL)</span>
@@ -304,7 +297,6 @@
                     <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg()">
                     <span>Cor do Fundo do Card</span>
                 </div>
-                <!-- Cores das Pausas -->
                 <div class="color-setting">
                     <input type="color" id="theme-short-break-color" value="#8ce99a" onchange="updateShortBreakColor(this.value)">
                     <span>Cor da Pausa Curta</span>
@@ -323,13 +315,13 @@
     </div>
 
     <script>
-       let timer;
+        let timer;
         let isRunning = false;
         let timeLeft = 0;
         let totalSecondsCurrent = 0;
         
-       // Carrega a fila salva na memória (ou inicia vazia se não houver)
         let blocksQueue = JSON.parse(localStorage.getItem('pomodoroQueue')) || [];
+        
         let currentMode = 'foco'; 
         let currentBlockIndex = 0;
         let completedFocosCount = 0; 
@@ -368,208 +360,118 @@
 
         const customAudio = new Audio();
 
-        // --------------------------------------------------------
-        // SALVAR A FILA DE BLOCOS (NOVIDADE AQUI!)
-        // --------------------------------------------------------
-        function saveQueue() {
-            localStorage.setItem('pomodoroQueue', JSON.stringify(blocksQueue));
+        // --- SISTEMA DE PERSISTÊNCIA COMPLETA ---
+        function saveQueue() { localStorage.setItem('pomodoroQueue', JSON.stringify(blocksQueue)); }
+
+        function saveTimerState() {
+            const state = {
+                timeLeft: timeLeft,
+                totalSecondsCurrent: totalSecondsCurrent,
+                currentMode: currentMode,
+                currentBlockIndex: currentBlockIndex,
+                completedFocosCount: completedFocosCount,
+                isRunning: isRunning,
+                lastTick: Date.now()
+            };
+            localStorage.setItem('pomodoroTimerState', JSON.stringify(state));
         }
 
-        // --------------------------------------------------------
-        // FUNÇÃO DE FORMATAR TEMPO (Ex: 67 -> 1h 7min)
-        // --------------------------------------------------------
         function formatMinutesDisplay(totalMins) {
             if (totalMins < 60) return `${totalMins} min`;
-            const h = Math.floor(totalMins / 60);
-            const m = totalMins % 60;
+            const h = Math.floor(totalMins / 60); const m = totalMins % 60;
             return m > 0 ? `${h}h ${m}min` : `${h}h`;
         }
 
-        // --------------------------------------------------------
-        // SISTEMA DE HISTÓRICO
-        // --------------------------------------------------------
+        // Histórico
         function saveToHistory(subject, color, durationInSeconds) {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
-            
             if (!history[dateStr]) history[dateStr] = {};
             if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color };
-            
             history[dateStr][subject].minutes += Math.round(durationInSeconds / 60);
             localStorage.setItem('pomodoroHistory', JSON.stringify(history));
         }
 
         function renderHistory() {
             let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
-            const dates = Object.keys(history).reverse(); 
-            const clearWrapper = document.getElementById('clear-history-wrapper');
-            
+            const dates = Object.keys(history).reverse(); const clearWrapper = document.getElementById('clear-history-wrapper');
             historyContent.innerHTML = '';
-            
-            if (dates.length === 0) {
-                historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda. Finalize um bloco de foco para ver os dados!</div>';
-                clearWrapper.style.display = 'none';
-                return;
-            }
-            
-            clearWrapper.style.display = 'block';
-            resetClearHistoryUI(); 
-            
+            if (dates.length === 0) { historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda.</div>'; clearWrapper.style.display = 'none'; return; }
+            clearWrapper.style.display = 'block'; resetClearHistoryUI(); 
             dates.forEach(date => {
-                let html = `<div class="history-day">
-                                <span class="history-date-title">${date}</span>`;
+                let html = `<div class="history-day"><span class="history-date-title">${date}</span>`;
                 for (let subj in history[date]) {
-                    const data = history[date][subj];
-                    const displayTime = formatMinutesDisplay(data.minutes);
-                    html += `
-                        <div class="history-item">
-                            <div class="history-item-subject">
-                                <span class="history-item-dot" style="background-color: ${data.color}"></span>
-                                <span>${subj}</span>
-                            </div>
-                            <span><strong>${displayTime}</strong></span>
-                        </div>
-                    `;
+                    const data = history[date][subj]; const displayTime = formatMinutesDisplay(data.minutes);
+                    html += `<div class="history-item"><div class="history-item-subject"><span class="history-item-dot" style="background-color: ${data.color}"></span><span>${subj}</span></div><span><strong>${displayTime}</strong></span></div>`;
                 }
-                html += `</div>`;
-                historyContent.innerHTML += html;
+                html += `</div>`; historyContent.innerHTML += html;
             });
         }
+        function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
+        function executeClearHistory() { localStorage.removeItem('pomodoroHistory'); renderHistory(); }
+        function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
+        function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); }
+        function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); }
 
-        function showClearConfirm() {
-            const wrapper = document.getElementById('clear-history-wrapper');
-            wrapper.innerHTML = `
-                <div class="clear-confirm-box">
-                    <span class="clear-confirm-text">Excluir todo o histórico?</span>
-                    <div class="clear-confirm-actions">
-                        <button class="clear-btn" onclick="executeClearHistory()" title="Sim, apagar">✅</button>
-                        <button class="clear-btn" onclick="resetClearHistoryUI()" title="Cancelar">❌</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function executeClearHistory() {
-            localStorage.removeItem('pomodoroHistory');
-            renderHistory();
-        }
-
-        function resetClearHistoryUI() {
-            const wrapper = document.getElementById('clear-history-wrapper');
-            wrapper.innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`;
-        }
-
-        function toggleHistory() {
-            if (!historyPanel.classList.contains('open')) renderHistory();
-            historyPanel.classList.toggle('open');
-            settingsPanel.classList.remove('open');
-        }
-
-        function toggleSettings() {
-            settingsPanel.classList.toggle('open');
-            historyPanel.classList.remove('open');
-        }
-
-        // --------------------------------------------------------
-        // SISTEMA PRINCIPAL E ESTILIZAÇÃO
-        // --------------------------------------------------------
-       function updateDisplay() {
-            if (blocksQueue.length === 0 && currentMode === 'foco') {
-                display.textContent = "00:00"; 
-                display.style.fontSize = "2.5rem"; // Volta a fonte ao normal
-                progressBar.style.strokeDashoffset = circumference; 
-                return;
-            }
-            
-            // Lógica matemática para converter os segundos totais
-            const hours = Math.floor(timeLeft / 3600);
-            const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
-            const seconds = (timeLeft % 60).toString().padStart(2, '0');
-            
-            // Se tiver 1 hora ou mais, mostra H:MM:SS e encolhe a letra
-            if (hours > 0) {
-                display.textContent = `${hours}:${minutes}:${seconds}`;
-                display.style.fontSize = "1.8rem"; 
-            } else {
-                // Menos de 1 hora, mostra formato clássico MM:SS gigante
-                display.textContent = `${minutes}:${seconds}`;
-                display.style.fontSize = "2.5rem"; 
-            }
-            
-            if (totalSecondsCurrent > 0) {
-                const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference;
-                progressBar.style.strokeDashoffset = offset;
-            }
+        // Core App & Formatação Relógio
+        function updateDisplay() {
+            if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
+            const hours = Math.floor(timeLeft / 3600); const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeLeft % 60).toString().padStart(2, '0');
+            if (hours > 0) { display.textContent = `${hours}:${minutes}:${seconds}`; display.style.fontSize = "1.8rem"; } 
+            else { display.textContent = `${minutes}:${seconds}`; display.style.fontSize = "2.5rem"; }
+            if (totalSecondsCurrent > 0) { const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; progressBar.style.strokeDashoffset = offset; }
         }
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
-        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); }
         
+        // Funções de Estilo com Persistência
+        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem('pomodoroBgUrl', url); }
+        function updateAudioUrl(url) { localStorage.setItem('pomodoroAudioUrl', url); }
+        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem('pomodoroTextColor', color); }
         function updateThemeBg() {
-            const color = document.getElementById('theme-bg-color').value;
-            const opacity = document.getElementById('theme-bg-opacity').value;
-            
-            let hex = color.replace('#', '');
-            let r = parseInt(hex.substring(0, 2), 16); 
-            let g = parseInt(hex.substring(2, 4), 16); 
-            let b = parseInt(hex.substring(4, 6), 16);
-            
+            const color = document.getElementById('theme-bg-color').value; const opacity = document.getElementById('theme-bg-opacity').value;
+            let hex = color.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
+            localStorage.setItem('pomodoroBgColor', color); localStorage.setItem('pomodoroBgOpacity', opacity);
         }
-
-        function updateShortBreakColor(color) {
-            shortBreakColor = color;
-            if (currentMode === 'curta') {
-                document.documentElement.style.setProperty('--accent-color', shortBreakColor);
-            }
-        }
-
-        function updateLongBreakColor(color) {
-            longBreakColor = color;
-            if (currentMode === 'longa') {
-                document.documentElement.style.setProperty('--accent-color', longBreakColor);
-            }
-        }
+        function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem('pomodoroShortBreakColor', color); }
+        function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem('pomodoroLongBreakColor', color); }
 
         function addNewBlock() {
             const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
-            const color = inputColor.value;
-            const minutes = parseInt(inputTime.value) || 25;
-
+            const color = inputColor.value; const minutes = parseInt(inputTime.value) || 25;
             blocksQueue.push({ id: Date.now(), subject: subject, color: color, duration: minutes * 60, completed: false });
-            saveQueue(); // Salva a fila atualizada
-
-            inputSubject.value = ""; renderBlocksList();
-            
+            saveQueue(); inputSubject.value = ""; renderBlocksList();
             if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
         }
 
-        function playBlock(idx) {
-            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return;
-            clearInterval(timer);
-            isRunning = false;
-            startBtn.textContent = 'Iniciar';
-            loadBlock(idx);
-        }
-
+        function playBlock(idx) { if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(idx); }
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
+        
+        // ATUALIZADO: Salvar com suporte a troca de cor inline!
         function saveEdit(idx) {
-            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim();
+            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); 
             const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value);
+            const newColor = document.getElementById(`edit-color-${idx}`).value; // Nova cor capturada
             
             if (newSubj !== "") blocksQueue[idx].subject = newSubj;
-            if (newTime > 0) {
-                blocksQueue[idx].duration = newTime * 60;
-                if (idx === currentBlockIndex && currentMode === 'foco') {
-                    totalSecondsCurrent = blocksQueue[idx].duration;
-                    if (!isRunning) timeLeft = blocksQueue[idx].duration; updateDisplay();
-                }
-            }
-            if (idx === currentBlockIndex && currentMode === 'foco') subjectDisplay.textContent = blocksQueue[idx].subject;
+            blocksQueue[idx].color = newColor; // Salva a cor no objeto da matéria
             
-            saveQueue(); // Salva a fila atualizada
-
-            editingBlockIndex = -1; renderBlocksList();
+            if (newTime > 0) { 
+                blocksQueue[idx].duration = newTime * 60; 
+                if (idx === currentBlockIndex && currentMode === 'foco') { 
+                    totalSecondsCurrent = blocksQueue[idx].duration; 
+                    if (!isRunning) timeLeft = blocksQueue[idx].duration; 
+                    updateDisplay(); 
+                } 
+            }
+            
+            if (idx === currentBlockIndex && currentMode === 'foco') {
+                subjectDisplay.textContent = blocksQueue[idx].subject;
+                document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color);
+            }
+            
+            saveQueue(); saveTimerState(); editingBlockIndex = -1; renderBlocksList();
         }
         function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
 
@@ -578,11 +480,8 @@
             blocksQueue.splice(idx, 1);
             if (idx < currentBlockIndex) currentBlockIndex--;
             else if (idx === currentBlockIndex) { clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
-            
-            saveQueue(); // Salva a fila atualizada
-
-            deletingBlockIndex = -1; renderBlocksList();
-            if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; }
+            saveQueue(); deletingBlockIndex = -1; renderBlocksList();
+            if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; saveTimerState(); }
         }
         function cancelDelete() { deletingBlockIndex = -1; renderBlocksList(); }
 
@@ -590,78 +489,57 @@
             clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
             if (mode === 'foco') {
                 if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) loadBlock(currentBlockIndex);
-                else { currentMode = 'foco'; switchModeUI('foco'); subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); }
+                else { currentMode = 'foco'; switchModeUI('foco'); subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); }
             } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); }
         }
 
         function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
 
         function loadBlock(index) {
-            if (index >= blocksQueue.length) {
-                clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
-                subjectDisplay.textContent = "Tudo Concluído!"; timeLeft = 0; currentBlockIndex = index; updateDisplay(); return;
-            }
+            if (index >= blocksQueue.length) { clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar"; subjectDisplay.textContent = "Tudo Concluído!"; timeLeft = 0; currentBlockIndex = index; updateDisplay(); saveTimerState(); return; }
             currentBlockIndex = index; currentMode = 'foco'; switchModeUI('foco');
-            const block = blocksQueue[index];
-            timeLeft = block.duration; totalSecondsCurrent = block.duration; subjectDisplay.textContent = block.subject;
-            document.documentElement.style.setProperty('--accent-color', block.color);
-            updateDisplay(); renderBlocksList();
+            const block = blocksQueue[index]; timeLeft = block.duration; totalSecondsCurrent = block.duration; subjectDisplay.textContent = block.subject;
+            document.documentElement.style.setProperty('--accent-color', block.color); updateDisplay(); renderBlocksList(); saveTimerState();
         }
 
         function startPausa(type) {
             currentMode = type; switchModeUI(type);
             const userMinutes = type === 'curta' ? (parseInt(inputBreakShort.value) || 5) : (parseInt(inputBreakLong.value) || 15);
-            timeLeft = userMinutes * 60; totalSecondsCurrent = userMinutes * 60;
-            subjectDisplay.textContent = type === 'curta' ? "Pausa Curta" : "Pausa Longa";
-            
+            timeLeft = userMinutes * 60; totalSecondsCurrent = userMinutes * 60; subjectDisplay.textContent = type === 'curta' ? "Pausa Curta" : "Pausa Longa";
             document.documentElement.style.setProperty('--accent-color', type === 'curta' ? shortBreakColor : longBreakColor);
-            
-            updateDisplay(); renderBlocksList();
+            updateDisplay(); renderBlocksList(); saveTimerState();
         }
 
-        function switchModeUI(mode) {
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
-        }
+        function switchModeUI(mode) { document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`btn-${mode}`).classList.add('active'); }
 
         function renderBlocksList() {
             if (blocksQueue.length > 0) emptyMsg.style.display = "none"; else emptyMsg.style.display = "block";
             blocksListContainer.innerHTML = "";
-            
             blocksQueue.forEach((block, idx) => {
-                const item = document.createElement('div');
-                const isActive = (idx === currentBlockIndex && currentMode === 'foco' && !block.completed);
+                const item = document.createElement('div'); const isActive = (idx === currentBlockIndex && currentMode === 'foco' && !block.completed);
                 item.className = `block-item ${isActive ? 'current-active' : ''}`;
-                
-                const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)';
-                const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
-                let contentHTML = '';
+                const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)'; const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
+                let contentHTML = ''; const displayDuration = formatMinutesDisplay(block.duration / 60);
 
-                const displayDuration = formatMinutesDisplay(block.duration / 60);
-
+                // ATUALIZADO: Modo de Edição agora inclui um seletor de cores super elegante!
                 if (editingBlockIndex === idx) {
                     contentHTML = `
                         <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
                         <div class="block-info-wrapper">
-                            <div class="block-text-group" style="gap: 4px;">
+                            <div class="block-text-group" style="gap: 5px; align-items: center;">
                                 <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
+                                <div class="color-wrapper" style="width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-shadow: 0 0 2px rgba(0,0,0,0.2);">
+                                    <input type="color" id="edit-color-${idx}" value="${block.color}" style="width: 32px; height: 32px;">
+                                </div>
                                 <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
                             </div>
                             <div class="block-actions" style="opacity: 1;">
-                                <button class="action-btn" onclick="saveEdit(${idx})" title="Salvar">✅</button>
-                                <button class="action-btn" onclick="cancelEdit()" title="Cancelar">❌</button>
+                                <button class="action-btn" onclick="saveEdit(${idx})">✅</button>
+                                <button class="action-btn" onclick="cancelEdit()">❌</button>
                             </div>
                         </div>`;
                 } else if (deletingBlockIndex === idx) {
-                    contentHTML = `
-                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
-                        <div class="block-info-wrapper">
-                            <span class="block-name" style="color: var(--accent-color); font-weight: 600;">Remover bloco?</span>
-                            <div class="block-actions" style="opacity: 1;">
-                                <button class="action-btn" onclick="confirmDelete(${idx})" title="Sim">✅</button>
-                                <button class="action-btn" onclick="cancelDelete()" title="Cancelar">❌</button>
-                            </div>
-                        </div>`;
+                    contentHTML = `<div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div><div class="block-info-wrapper"><span class="block-name" style="color: var(--accent-color); font-weight: 600;">Remover?</span><div class="block-actions" style="opacity: 1;"><button class="action-btn" onclick="confirmDelete(${idx})">✅</button><button class="action-btn" onclick="cancelDelete()">❌</button></div></div>`;
                 } else {
                     contentHTML = `
                         <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
@@ -684,36 +562,32 @@
         function toggleTimer() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
             if (isRunning) { clearInterval(timer); startBtn.textContent = 'Iniciar'; } else { timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; }
-            isRunning = !isRunning;
+            isRunning = !isRunning; saveTimerState();
         }
 
+        document.body.addEventListener('click', function() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === 'suspended') ctx.resume();
+        }, { once: true });
+
         function countdown() {
-            if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
+            if (timeLeft > 0) { timeLeft--; updateDisplay(); saveTimerState(); } 
             else {
                 clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
                 if (currentMode === 'foco') {
-                    if(blocksQueue[currentBlockIndex]) { 
-                        blocksQueue[currentBlockIndex].completed = true; 
-                        saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration);
-                        saveQueue(); // Salva para registrar a bolinha pintada
-                    }
+                    if(blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].completed = true; saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); }
                     completedFocosCount++; renderBlocksList();
                     if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
                 } else { loadBlock(currentBlockIndex + 1); }
+                saveTimerState();
             }
         }
 
-        function resetTimer() {
-            if (blocksQueue.length === 0 && currentMode === 'foco') return;
-            clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar';
-            timeLeft = totalSecondsCurrent; updateDisplay();
-        }
-
-        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; }
+        function resetTimer() { if (blocksQueue.length === 0 && currentMode === 'foco') return; clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; timeLeft = totalSecondsCurrent; updateDisplay(); saveTimerState(); }
 
         function playAlarm() {
-            const url = inputAudioUrl.value.trim();
-            if (url) { customAudio.src = url; customAudio.play().catch(e => { playOscillator(); }); } 
+            const url = localStorage.getItem('pomodoroAudioUrl') || '';
+            if (url.trim() !== "") { customAudio.src = url; customAudio.play().catch(e => { playOscillator(); }); } 
             else { playOscillator(); }
         }
 
@@ -721,35 +595,57 @@
             try {
                 const context = new (window.AudioContext || window.webkitAudioContext)();
                 function playBeep(startTime) {
-                    const oscillator = context.createOscillator(); 
-                    const gain = context.createGain();
-                    oscillator.type = 'sine'; 
-                    oscillator.frequency.setValueAtTime(880.00, startTime); 
-                    gain.gain.setValueAtTime(0.5, startTime);
-                    oscillator.connect(gain); 
-                    gain.connect(context.destination);
-                    oscillator.start(startTime); 
-                    oscillator.stop(startTime + 0.8); 
+                    const oscillator = context.createOscillator(); const gain = context.createGain();
+                    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(880.00, startTime); gain.gain.setValueAtTime(0.5, startTime);
+                    oscillator.connect(gain); gain.connect(context.destination); oscillator.start(startTime); oscillator.stop(startTime + 0.8); 
                 }
-                const now = context.currentTime;
-                playBeep(now); playBeep(now + 1.0); playBeep(now + 2.0);
-            } catch (e) { console.log("Áudio bloqueado pelo navegador."); }
+                const now = context.currentTime; playBeep(now); playBeep(now + 1.0); playBeep(now + 2.0);
+            } catch (e) { console.log("Áudio bloqueado."); }
         }
 
-        // --------------------------------------------------------
-        // INICIALIZAÇÃO DA PÁGINA
-        // --------------------------------------------------------
+        // Carregamento de Configurações
         document.addEventListener('DOMContentLoaded', () => {
+            const savedBgUrl = localStorage.getItem('pomodoroBgUrl') || '';
+            const savedAudioUrl = localStorage.getItem('pomodoroAudioUrl') || '';
+            const savedTextColor = localStorage.getItem('pomodoroTextColor') || '#37352f';
+            const savedBgColor = localStorage.getItem('pomodoroBgColor') || '#ffffff';
+            const savedBgOpacity = localStorage.getItem('pomodoroBgOpacity') || '0.85';
+            shortBreakColor = localStorage.getItem('pomodoroShortBreakColor') || '#8ce99a';
+            longBreakColor = localStorage.getItem('pomodoroLongBreakColor') || '#74c0fc';
+
+            document.getElementById('bg-url').value = savedBgUrl;
+            document.getElementById('input-audio-url').value = savedAudioUrl;
+            document.getElementById('theme-text-color').value = savedTextColor;
+            document.getElementById('theme-bg-color').value = savedBgColor;
+            document.getElementById('theme-bg-opacity').value = savedBgOpacity;
+            document.getElementById('theme-short-break-color').value = shortBreakColor;
+            document.getElementById('theme-long-break-color').value = longBreakColor;
+
+            if (savedBgUrl.trim() !== "") document.body.style.backgroundImage = `url('${savedBgUrl}')`;
+            document.documentElement.style.setProperty('--text-color', savedTextColor);
+            let hex = savedBgColor.replace('#', '');
+            let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
+            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
+
             renderBlocksList();
-            // Se houver blocos na fila quando a página abrir, ele puxa o primeiro bloco não concluído
-            if (blocksQueue.length > 0) {
-                let firstUncompleted = blocksQueue.findIndex(b => !b.completed);
-                if (firstUncompleted !== -1) {
-                    loadBlock(firstUncompleted);
-                } else {
-                    // Se todos já estiverem concluídos, puxa o primeiro da lista
-                    loadBlock(0);
-                }
+            
+            const savedState = JSON.parse(localStorage.getItem('pomodoroTimerState'));
+            if (savedState && savedState.totalSecondsCurrent > 0) {
+                currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex; completedFocosCount = savedState.completedFocosCount; totalSecondsCurrent = savedState.totalSecondsCurrent;
+                if (savedState.isRunning) {
+                    const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); timeLeft = savedState.timeLeft - elapsedSeconds;
+                    if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
+                    else { isRunning = true; timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; }
+                } else { timeLeft = savedState.timeLeft; isRunning = false; }
+                switchModeUI(currentMode);
+                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
+                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
+                } else if (currentMode !== 'foco') {
+                    subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
+                } else { subjectDisplay.textContent = "Sem blocos"; }
+                updateDisplay();
+            } else {
+                if (blocksQueue.length > 0) { let firstUncompleted = blocksQueue.findIndex(b => !b.completed); loadBlock(firstUncompleted !== -1 ? firstUncompleted : 0); } else { updateDisplay(); }
             }
         });
     </script>
