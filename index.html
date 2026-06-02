@@ -4,15 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
-    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Cinzel:wght@500;600&family=Comfortaa:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Courier+Prime&family=Fira+Code:wght@400;500&family=Fredoka:wght@400;500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Merriweather:ital,wght@0,400;0,700&family=Montserrat:wght@400;500;600&family=Nunito:wght@400;500;600&family=Outfit:wght@400;500;600&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Roboto:wght@400;500&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --font-serif: 'Playfair Display', serif;
-            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --font-text: 'Plus Jakarta Sans', sans-serif;
+            --font-timer: 'Playfair Display', serif;
             --text-color: #37352f;
             --bg-card: rgba(255, 255, 255, 0.85);
             --border-color: rgba(125, 125, 125, 0.2);
@@ -29,7 +28,7 @@
         body {
             margin: 0;
             padding: 10px;
-            font-family: var(--font-sans);
+            font-family: var(--font-text);
             color: var(--text-color);
             display: flex;
             justify-content: center;
@@ -71,7 +70,7 @@
         .modes { display: flex; justify-content: center; gap: 12px; margin-bottom: 10px; }
         .mode-btn {
             background: none; border: none; color: var(--text-color); opacity: 0.4;
-            padding: 4px 8px; font-size: 0.8rem; font-family: var(--font-sans);
+            padding: 4px 8px; font-size: 0.8rem; font-family: var(--font-text);
             letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease;
         }
         .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
@@ -88,13 +87,13 @@
         }
 
         .timer-text-box { display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2; width: 80%; }
-        .status-text { font-family: var(--font-serif); font-style: italic; font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
-        .timer-display { font-family: var(--font-serif); font-size: 2.5rem; font-weight: 500; margin: 0; transition: font-size 0.2s ease; }
+        .status-text { font-family: var(--font-text); font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+        .timer-display { font-family: var(--font-timer); font-size: 2.5rem; font-weight: 500; margin: 0; transition: font-size 0.2s ease; }
 
         .controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; }
         .main-btn {
             background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            padding: 8px 24px; font-size: 0.8rem; font-family: var(--font-sans); letter-spacing: 0.5px;
+            padding: 8px 24px; font-size: 0.8rem; font-family: var(--font-text); letter-spacing: 0.5px;
             border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
         }
         .reset-btn {
@@ -108,7 +107,7 @@
         .planner-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
         .planner-input {
             background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
-            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-sans);
+            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text);
             outline: none; box-sizing: border-box; transition: border-color 0.2s;
         }
         .planner-input:focus { border-color: var(--text-color); }
@@ -152,7 +151,7 @@
 
         .inline-input {
             background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-family: var(--font-sans);
+            border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-family: var(--font-text);
             width: 90px; outline: none;
         }
         .inline-input.time { width: 40px; text-align: center; }
@@ -165,7 +164,7 @@
         }
         .overlay-panel.open { display: block; }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .panel-title { font-size: 1rem; font-family: var(--font-serif); font-weight: 600; }
+        .panel-title { font-size: 1rem; font-family: var(--font-text); font-weight: 600; }
         .close-panel { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); opacity: 0.6; }
 
         .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
@@ -194,7 +193,7 @@
         .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
         .setting-input {
             width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
-            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-sans); box-sizing: border-box; outline: none;
+            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text); box-sizing: border-box; outline: none;
         }
         .setting-input option { background: var(--bg-card); color: var(--text-color); }
         .flex-row { display: flex; gap: 10px; }
@@ -279,20 +278,33 @@
                     <span class="setting-label">🔤 Fonte do Texto</span>
                     <select id="theme-font-text" class="setting-input" onchange="updateFontText(this.value)">
                         <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta (Padrão)</option>
-                        <option value="'Inter', sans-serif">Inter</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Quicksand', sans-serif">Quicksand</option>
-                        <option value="'Space Mono', monospace">Space Mono</option>
+                        <option value="'Inter', sans-serif">Inter (Clean)</option>
+                        <option value="'Poppins', sans-serif">Poppins (Moderna)</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Outfit', sans-serif">Outfit (Métrica)</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Quicksand', sans-serif">Quicksand (Suave)</option>
+                        <option value="'Comfortaa', cursive">Comfortaa (Cute)</option>
+                        <option value="'Fredoka', sans-serif">Fredoka (Bold Arredondada)</option>
+                        <option value="'Patrick Hand', cursive">Patrick Hand (Manual)</option>
+                        <option value="'Space Mono', monospace">Space Mono (Retro)</option>
+                        <option value="'JetBrains Mono', monospace">JetBrains Mono (Dev)</option>
                     </select>
                 </div>
                 <div>
                     <span class="setting-label">🔢 Fonte das Horas</span>
                     <select id="theme-font-timer" class="setting-input" onchange="updateFontTimer(this.value)">
                         <option value="'Playfair Display', serif">Playfair (Padrão)</option>
-                        <option value="'Lora', serif">Lora</option>
-                        <option value="'Outfit', sans-serif">Outfit</option>
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Space Mono', monospace">Space Mono</option>
+                        <option value="'Lora', serif">Lora (Elegante)</option>
+                        <option value="'Merriweather', serif">Merriweather (Forte)</option>
+                        <option value="'Cormorant Garamond', serif">Cormorant (Fina)</option>
+                        <option value="'Cinzel', serif">Cinzel (Romana)</option>
+                        <option value="'Outfit', sans-serif">Outfit (Relógio Moderno)</option>
+                        <option value="'Poppins', sans-serif">Poppins (Nívea)</option>
+                        <option value="'Space Mono', monospace">Space Mono (Digital Terminal)</option>
+                        <option value="'Fira Code', monospace">Fira Code (Code Display)</option>
+                        <option value="'Courier Prime', monospace">Courier (Máquina Antiga)</option>
+                        <option value="'Amatic SC', cursive">Amatic SC (Esticada Tall)</option>
                     </select>
                 </div>
             </div>
@@ -334,8 +346,6 @@
     </div>
 
     <script>
-        // --- SISTEMA DE ISOLAMENTO DE PÁGINAS (NOVIDADE AQUI) ---
-        // Ele lê o ?id= no final do link para criar memórias separadas
         const urlParams = new URLSearchParams(window.location.search);
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
@@ -385,7 +395,7 @@
 
         const customAudio = new Audio();
 
-        // --- SISTEMA DE PERSISTÊNCIA ISOLADA ---
+        // Persistência
         function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
 
         function saveTimerState() {
@@ -452,8 +462,9 @@
         function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem(getKey('ShortBreakColor'), color); }
         function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem(getKey('LongBreakColor'), color); }
         
-        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-sans', fontStr); localStorage.setItem(getKey('FontText'), fontStr); }
-        function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-serif', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
+        // Correção das Funções de Fontes Isoladas
+        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-text', fontStr); localStorage.setItem(getKey('FontText'), fontStr); }
+        function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-timer', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
 
         function addNewBlock() {
             const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
@@ -602,7 +613,7 @@
             } catch (e) { console.log("Áudio bloqueado."); }
         }
 
-        // Inicialização e Leitura Isolada
+        // Carregamento Isolado Total
         document.addEventListener('DOMContentLoaded', () => {
             const savedBgUrl = localStorage.getItem(getKey('BgUrl')) || '';
             const savedAudioUrl = localStorage.getItem(getKey('AudioUrl')) || '';
@@ -611,6 +622,8 @@
             const savedBgOpacity = localStorage.getItem(getKey('BgOpacity')) || '0.85';
             shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
             longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
+            
+            // Variáveis de Fontes Corrigidas
             const savedFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
             const savedFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
 
@@ -621,6 +634,7 @@
             document.getElementById('theme-bg-opacity').value = savedBgOpacity;
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
+            
             document.getElementById('theme-font-text').value = savedFontText;
             document.getElementById('theme-font-timer').value = savedFontTimer;
 
@@ -629,8 +643,10 @@
             let hex = savedBgColor.replace('#', '');
             let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
-            document.documentElement.style.setProperty('--font-sans', savedFontText);
-            document.documentElement.style.setProperty('--font-serif', savedFontTimer);
+            
+            // Aplicação Isolada das Variáveis de Fonte
+            document.documentElement.style.setProperty('--font-text', savedFontText);
+            document.documentElement.style.setProperty('--font-timer', savedFontTimer);
 
             renderBlocksList();
             
