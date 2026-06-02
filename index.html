@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
+    <!-- Um pacote enorme de Fontes Elegantes e Modernas -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -202,6 +203,7 @@
             width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
             border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-sans); box-sizing: border-box; outline: none;
         }
+        .setting-input option { background: var(--bg-card); color: var(--text-color); }
         .flex-row { display: flex; gap: 10px; }
         .flex-row > div { flex: 1; }
         
@@ -278,6 +280,31 @@
                     <input type="number" id="input-break-long" class="setting-input" value="15" min="1" onchange="updateLivePause('longa')">
                 </div>
             </div>
+            
+            <!-- SELETOR DE FONTES -->
+            <div class="setting-group flex-row">
+                <div>
+                    <span class="setting-label">🔤 Fonte do Texto</span>
+                    <select id="theme-font-text" class="setting-input" onchange="updateFontText(this.value)">
+                        <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta (Padrão)</option>
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Quicksand', sans-serif">Quicksand</option>
+                        <option value="'Space Mono', monospace">Space Mono</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="setting-label">🔢 Fonte das Horas</span>
+                    <select id="theme-font-timer" class="setting-input" onchange="updateFontTimer(this.value)">
+                        <option value="'Playfair Display', serif">Playfair (Padrão)</option>
+                        <option value="'Lora', serif">Lora</option>
+                        <option value="'Outfit', sans-serif">Outfit</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Space Mono', monospace">Space Mono</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="setting-group">
                 <span class="setting-label">🎵 Som de Alarme (URL MP3/WAV)</span>
                 <input type="text" id="input-audio-url" class="setting-input" placeholder="Cole o link do áudio aqui..." onchange="updateAudioUrl(this.value)">
@@ -436,6 +463,16 @@
         }
         function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem('pomodoroShortBreakColor', color); }
         function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem('pomodoroLongBreakColor', color); }
+        
+        // Atualização de Fontes
+        function updateFontText(fontStr) {
+            document.documentElement.style.setProperty('--font-sans', fontStr);
+            localStorage.setItem('pomodoroFontText', fontStr);
+        }
+        function updateFontTimer(fontStr) {
+            document.documentElement.style.setProperty('--font-serif', fontStr);
+            localStorage.setItem('pomodoroFontTimer', fontStr);
+        }
 
         function addNewBlock() {
             const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
@@ -448,14 +485,13 @@
         function playBlock(idx) { if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(idx); }
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
         
-        // ATUALIZADO: Salvar com suporte a troca de cor inline!
         function saveEdit(idx) {
             const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); 
             const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value);
-            const newColor = document.getElementById(`edit-color-${idx}`).value; // Nova cor capturada
+            const newColor = document.getElementById(`edit-color-${idx}`).value; 
             
             if (newSubj !== "") blocksQueue[idx].subject = newSubj;
-            blocksQueue[idx].color = newColor; // Salva a cor no objeto da matéria
+            blocksQueue[idx].color = newColor; 
             
             if (newTime > 0) { 
                 blocksQueue[idx].duration = newTime * 60; 
@@ -521,7 +557,6 @@
                 const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)'; const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
                 let contentHTML = ''; const displayDuration = formatMinutesDisplay(block.duration / 60);
 
-                // ATUALIZADO: Modo de Edição agora inclui um seletor de cores super elegante!
                 if (editingBlockIndex === idx) {
                     contentHTML = `
                         <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
@@ -603,7 +638,7 @@
             } catch (e) { console.log("Áudio bloqueado."); }
         }
 
-        // Carregamento de Configurações
+        // Carregamento de Configurações e Fontes
         document.addEventListener('DOMContentLoaded', () => {
             const savedBgUrl = localStorage.getItem('pomodoroBgUrl') || '';
             const savedAudioUrl = localStorage.getItem('pomodoroAudioUrl') || '';
@@ -612,6 +647,10 @@
             const savedBgOpacity = localStorage.getItem('pomodoroBgOpacity') || '0.85';
             shortBreakColor = localStorage.getItem('pomodoroShortBreakColor') || '#8ce99a';
             longBreakColor = localStorage.getItem('pomodoroLongBreakColor') || '#74c0fc';
+            
+            // Variáveis das Fontes Salvas
+            const savedFontText = localStorage.getItem('pomodoroFontText') || "'Plus Jakarta Sans', sans-serif";
+            const savedFontTimer = localStorage.getItem('pomodoroFontTimer') || "'Playfair Display', serif";
 
             document.getElementById('bg-url').value = savedBgUrl;
             document.getElementById('input-audio-url').value = savedAudioUrl;
@@ -620,12 +659,20 @@
             document.getElementById('theme-bg-opacity').value = savedBgOpacity;
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
+            
+            // Popula os Selects das fontes
+            document.getElementById('theme-font-text').value = savedFontText;
+            document.getElementById('theme-font-timer').value = savedFontTimer;
 
             if (savedBgUrl.trim() !== "") document.body.style.backgroundImage = `url('${savedBgUrl}')`;
             document.documentElement.style.setProperty('--text-color', savedTextColor);
             let hex = savedBgColor.replace('#', '');
             let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
+            
+            // Aplica as fontes
+            document.documentElement.style.setProperty('--font-sans', savedFontText);
+            document.documentElement.style.setProperty('--font-serif', savedFontTimer);
 
             renderBlocksList();
             
