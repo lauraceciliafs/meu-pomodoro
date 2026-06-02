@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
-    <!-- Um pacote enorme de Fontes Elegantes e Modernas -->
+    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -58,7 +58,6 @@
             overflow: hidden; 
         }
 
-        /* Botões do Topo */
         .top-btn {
             position: absolute; top: 16px; background: none; border: none;
             font-size: 1.1rem; cursor: pointer; opacity: 0.5;
@@ -77,7 +76,6 @@
         }
         .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
 
-        /* Círculo */
         .timer-container {
             position: relative; width: 160px; height: 160px; margin: 10px auto 20px auto;
             display: flex; justify-content: center; align-items: center;
@@ -106,7 +104,6 @@
         }
         .main-btn:hover, .reset-btn:hover { background: var(--text-color); color: var(--bg-card, #fff); }
 
-        /* Planejador de Blocos */
         .planner-section { border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; }
         .planner-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
         .planner-input {
@@ -135,7 +132,6 @@
         @media (prefers-color-scheme: dark) { .add-btn { background: #e3e3e3; color: #191919; } }
         .add-btn:hover { opacity: 0.8; }
 
-        /* Lista de Blocos */
         .blocks-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; padding-right: 4px; }
         .blocks-list::-webkit-scrollbar { width: 4px; }
         .blocks-list::-webkit-scrollbar-thumb { background: rgba(125, 125, 125, 0.3); border-radius: 4px; }
@@ -162,7 +158,6 @@
         .inline-input.time { width: 40px; text-align: center; }
         .empty-msg { font-size: 0.75rem; opacity: 0.5; text-align: center; font-style: italic; margin: 5px 0; }
 
-        /* Painéis Genéricos */
         .overlay-panel {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-card); backdrop-filter: blur(15px); border-radius: 20px;
@@ -173,7 +168,6 @@
         .panel-title { font-size: 1rem; font-family: var(--font-serif); font-weight: 600; }
         .close-panel { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); opacity: 0.6; }
 
-        /* Histórico */
         .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
         .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
         .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; }
@@ -196,7 +190,6 @@
         .clear-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 0; font-size: 0.9rem; }
         .clear-btn:hover { transform: scale(1.15); }
 
-        /* Configurações */
         .setting-group { margin-bottom: 16px; }
         .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
         .setting-input {
@@ -281,7 +274,6 @@
                 </div>
             </div>
             
-            <!-- SELETOR DE FONTES -->
             <div class="setting-group flex-row">
                 <div>
                     <span class="setting-label">🔤 Fonte do Texto</span>
@@ -342,12 +334,18 @@
     </div>
 
     <script>
+        // --- SISTEMA DE ISOLAMENTO DE PÁGINAS (NOVIDADE AQUI) ---
+        // Ele lê o ?id= no final do link para criar memórias separadas
+        const urlParams = new URLSearchParams(window.location.search);
+        const widgetId = urlParams.get('id') || '';
+        function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
+
         let timer;
         let isRunning = false;
         let timeLeft = 0;
         let totalSecondsCurrent = 0;
         
-        let blocksQueue = JSON.parse(localStorage.getItem('pomodoroQueue')) || [];
+        let blocksQueue = JSON.parse(localStorage.getItem(getKey('Queue'))) || [];
         
         let currentMode = 'foco'; 
         let currentBlockIndex = 0;
@@ -387,20 +385,12 @@
 
         const customAudio = new Audio();
 
-        // --- SISTEMA DE PERSISTÊNCIA COMPLETA ---
-        function saveQueue() { localStorage.setItem('pomodoroQueue', JSON.stringify(blocksQueue)); }
+        // --- SISTEMA DE PERSISTÊNCIA ISOLADA ---
+        function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
 
         function saveTimerState() {
-            const state = {
-                timeLeft: timeLeft,
-                totalSecondsCurrent: totalSecondsCurrent,
-                currentMode: currentMode,
-                currentBlockIndex: currentBlockIndex,
-                completedFocosCount: completedFocosCount,
-                isRunning: isRunning,
-                lastTick: Date.now()
-            };
-            localStorage.setItem('pomodoroTimerState', JSON.stringify(state));
+            const state = { timeLeft: timeLeft, totalSecondsCurrent: totalSecondsCurrent, currentMode: currentMode, currentBlockIndex: currentBlockIndex, completedFocosCount: completedFocosCount, isRunning: isRunning, lastTick: Date.now() };
+            localStorage.setItem(getKey('TimerState'), JSON.stringify(state));
         }
 
         function formatMinutesDisplay(totalMins) {
@@ -412,15 +402,15 @@
         // Histórico
         function saveToHistory(subject, color, durationInSeconds) {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-            let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
+            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (!history[dateStr]) history[dateStr] = {};
             if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color };
             history[dateStr][subject].minutes += Math.round(durationInSeconds / 60);
-            localStorage.setItem('pomodoroHistory', JSON.stringify(history));
+            localStorage.setItem(getKey('History'), JSON.stringify(history));
         }
 
         function renderHistory() {
-            let history = JSON.parse(localStorage.getItem('pomodoroHistory')) || {};
+            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             const dates = Object.keys(history).reverse(); const clearWrapper = document.getElementById('clear-history-wrapper');
             historyContent.innerHTML = '';
             if (dates.length === 0) { historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda.</div>'; clearWrapper.style.display = 'none'; return; }
@@ -435,12 +425,11 @@
             });
         }
         function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
-        function executeClearHistory() { localStorage.removeItem('pomodoroHistory'); renderHistory(); }
+        function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); }
         function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
         function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); }
         function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); }
 
-        // Core App & Formatação Relógio
         function updateDisplay() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
             const hours = Math.floor(timeLeft / 3600); const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeLeft % 60).toString().padStart(2, '0');
@@ -451,28 +440,20 @@
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
         
-        // Funções de Estilo com Persistência
-        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem('pomodoroBgUrl', url); }
-        function updateAudioUrl(url) { localStorage.setItem('pomodoroAudioUrl', url); }
-        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem('pomodoroTextColor', color); }
+        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem(getKey('BgUrl'), url); }
+        function updateAudioUrl(url) { localStorage.setItem(getKey('AudioUrl'), url); }
+        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem(getKey('TextColor'), color); }
         function updateThemeBg() {
             const color = document.getElementById('theme-bg-color').value; const opacity = document.getElementById('theme-bg-opacity').value;
             let hex = color.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
-            localStorage.setItem('pomodoroBgColor', color); localStorage.setItem('pomodoroBgOpacity', opacity);
+            localStorage.setItem(getKey('BgColor'), color); localStorage.setItem(getKey('BgOpacity'), opacity);
         }
-        function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem('pomodoroShortBreakColor', color); }
-        function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem('pomodoroLongBreakColor', color); }
+        function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem(getKey('ShortBreakColor'), color); }
+        function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem(getKey('LongBreakColor'), color); }
         
-        // Atualização de Fontes
-        function updateFontText(fontStr) {
-            document.documentElement.style.setProperty('--font-sans', fontStr);
-            localStorage.setItem('pomodoroFontText', fontStr);
-        }
-        function updateFontTimer(fontStr) {
-            document.documentElement.style.setProperty('--font-serif', fontStr);
-            localStorage.setItem('pomodoroFontTimer', fontStr);
-        }
+        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-sans', fontStr); localStorage.setItem(getKey('FontText'), fontStr); }
+        function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-serif', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
 
         function addNewBlock() {
             const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
@@ -486,27 +467,11 @@
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
         
         function saveEdit(idx) {
-            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); 
-            const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value);
-            const newColor = document.getElementById(`edit-color-${idx}`).value; 
-            
+            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value); const newColor = document.getElementById(`edit-color-${idx}`).value; 
             if (newSubj !== "") blocksQueue[idx].subject = newSubj;
             blocksQueue[idx].color = newColor; 
-            
-            if (newTime > 0) { 
-                blocksQueue[idx].duration = newTime * 60; 
-                if (idx === currentBlockIndex && currentMode === 'foco') { 
-                    totalSecondsCurrent = blocksQueue[idx].duration; 
-                    if (!isRunning) timeLeft = blocksQueue[idx].duration; 
-                    updateDisplay(); 
-                } 
-            }
-            
-            if (idx === currentBlockIndex && currentMode === 'foco') {
-                subjectDisplay.textContent = blocksQueue[idx].subject;
-                document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color);
-            }
-            
+            if (newTime > 0) { blocksQueue[idx].duration = newTime * 60; if (idx === currentBlockIndex && currentMode === 'foco') { totalSecondsCurrent = blocksQueue[idx].duration; if (!isRunning) timeLeft = blocksQueue[idx].duration; updateDisplay(); } }
+            if (idx === currentBlockIndex && currentMode === 'foco') { subjectDisplay.textContent = blocksQueue[idx].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color); }
             saveQueue(); saveTimerState(); editingBlockIndex = -1; renderBlocksList();
         }
         function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
@@ -514,8 +479,7 @@
         function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
         function confirmDelete(idx) {
             blocksQueue.splice(idx, 1);
-            if (idx < currentBlockIndex) currentBlockIndex--;
-            else if (idx === currentBlockIndex) { clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
+            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
             saveQueue(); deletingBlockIndex = -1; renderBlocksList();
             if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; saveTimerState(); }
         }
@@ -621,7 +585,7 @@
         function resetTimer() { if (blocksQueue.length === 0 && currentMode === 'foco') return; clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; timeLeft = totalSecondsCurrent; updateDisplay(); saveTimerState(); }
 
         function playAlarm() {
-            const url = localStorage.getItem('pomodoroAudioUrl') || '';
+            const url = localStorage.getItem(getKey('AudioUrl')) || '';
             if (url.trim() !== "") { customAudio.src = url; customAudio.play().catch(e => { playOscillator(); }); } 
             else { playOscillator(); }
         }
@@ -638,19 +602,17 @@
             } catch (e) { console.log("Áudio bloqueado."); }
         }
 
-        // Carregamento de Configurações e Fontes
+        // Inicialização e Leitura Isolada
         document.addEventListener('DOMContentLoaded', () => {
-            const savedBgUrl = localStorage.getItem('pomodoroBgUrl') || '';
-            const savedAudioUrl = localStorage.getItem('pomodoroAudioUrl') || '';
-            const savedTextColor = localStorage.getItem('pomodoroTextColor') || '#37352f';
-            const savedBgColor = localStorage.getItem('pomodoroBgColor') || '#ffffff';
-            const savedBgOpacity = localStorage.getItem('pomodoroBgOpacity') || '0.85';
-            shortBreakColor = localStorage.getItem('pomodoroShortBreakColor') || '#8ce99a';
-            longBreakColor = localStorage.getItem('pomodoroLongBreakColor') || '#74c0fc';
-            
-            // Variáveis das Fontes Salvas
-            const savedFontText = localStorage.getItem('pomodoroFontText') || "'Plus Jakarta Sans', sans-serif";
-            const savedFontTimer = localStorage.getItem('pomodoroFontTimer') || "'Playfair Display', serif";
+            const savedBgUrl = localStorage.getItem(getKey('BgUrl')) || '';
+            const savedAudioUrl = localStorage.getItem(getKey('AudioUrl')) || '';
+            const savedTextColor = localStorage.getItem(getKey('TextColor')) || '#37352f';
+            const savedBgColor = localStorage.getItem(getKey('BgColor')) || '#ffffff';
+            const savedBgOpacity = localStorage.getItem(getKey('BgOpacity')) || '0.85';
+            shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
+            longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
+            const savedFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
+            const savedFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
 
             document.getElementById('bg-url').value = savedBgUrl;
             document.getElementById('input-audio-url').value = savedAudioUrl;
@@ -659,8 +621,6 @@
             document.getElementById('theme-bg-opacity').value = savedBgOpacity;
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
-            
-            // Popula os Selects das fontes
             document.getElementById('theme-font-text').value = savedFontText;
             document.getElementById('theme-font-timer').value = savedFontTimer;
 
@@ -669,14 +629,12 @@
             let hex = savedBgColor.replace('#', '');
             let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
-            
-            // Aplica as fontes
             document.documentElement.style.setProperty('--font-sans', savedFontText);
             document.documentElement.style.setProperty('--font-serif', savedFontTimer);
 
             renderBlocksList();
             
-            const savedState = JSON.parse(localStorage.getItem('pomodoroTimerState'));
+            const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
             if (savedState && savedState.totalSecondsCurrent > 0) {
                 currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex; completedFocosCount = savedState.completedFocosCount; totalSecondsCurrent = savedState.totalSecondsCurrent;
                 if (savedState.isRunning) {
