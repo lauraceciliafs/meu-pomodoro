@@ -663,15 +663,22 @@
         function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
 
         function loadBlock(index) {
-            if (index >= blocksQueue.length) {
+            // Se a lista estiver totalmente vazia, aí sim ele avisa e aborta
+            if (blocksQueue.length === 0) {
                 document.getElementById('current-subject').textContent = 'Nenhum bloco';
                 return;
             }
+            
+            // CORREÇÃO: Se o index se perder e for maior que a lista, volta para a primeira matéria (0)
+            if (index >= blocksQueue.length || index < 0) {
+                index = 0; 
+            }
+            
             currentBlockIndex = index;
             const block = blocksQueue[index];
             document.getElementById('current-subject').textContent = block.subject;
             
-            // Verifica se tem tempo pausado. Se não tiver, puxa o total normal.
+            // Verifica se tem tempo pausado
             if (block.remainingTime !== undefined && block.remainingTime > 0) {
                 timeLeft = block.remainingTime;
             } else {
