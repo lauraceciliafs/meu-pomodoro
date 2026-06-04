@@ -796,7 +796,11 @@
                         }
                         completedFocosCount++; renderBlocksList();
                         if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
-                    } else { loadBlock(currentBlockIndex + 1); }
+                    } else { 
+                        // CORREÇÃO AQUI: Altera o modo de volta para foco antes de carregar o bloco
+                        currentMode = 'foco'; 
+                        loadBlock(currentBlockIndex + 1); 
+                    }
                     saveTimerState();
                 }
             }
