@@ -663,10 +663,24 @@
         function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
 
         function loadBlock(index) {
-            if (index >= blocksQueue.length) { clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar"; subjectDisplay.textContent = "Tudo Concluído!"; timeLeft = 0; currentBlockIndex = index; updateDisplay(); saveTimerState(); return; }
-            currentBlockIndex = index; currentMode = 'foco'; switchModeUI('foco');
-            const block = blocksQueue[index]; timeLeft = block.duration; totalSecondsCurrent = block.duration; subjectDisplay.textContent = block.subject;
-            document.documentElement.style.setProperty('--accent-color', block.color); updateDisplay(); renderBlocksList(); saveTimerState();
+            if (index >= blocksQueue.length) {
+                document.getElementById('current-subject').textContent = 'Nenhum bloco';
+                return;
+            }
+            currentBlockIndex = index;
+            const block = blocksQueue[index];
+            document.getElementById('current-subject').textContent = block.subject;
+            
+            // Verifica se tem tempo pausado. Se não tiver, puxa o total normal.
+            if (block.remainingTime !== undefined && block.remainingTime > 0) {
+                timeLeft = block.remainingTime;
+            } else {
+                timeLeft = block.duration;
+            }
+            
+            totalSecondsCurrent = block.duration; 
+            updateDisplay();
+            renderBlocksList();
         }
 
         function startPausa(type) {
@@ -725,17 +739,29 @@
             });
         }
 
-        function toggleTimer() {
+        function playAlarm() {
+            const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+            audio.volume = 1.0;
+            audio.play().catch(e => console.log('O Notion bloqueou o áudio:', e));
+        }
+
+       function toggleTimer() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
             if (isRunning) { 
                 clearInterval(timer); startBtn.textContent = 'Iniciar'; 
+                
+                // Salva o tempo pausado na matéria atual
+                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
+                    blocksQueue[currentBlockIndex].remainingTime = timeLeft;
+                    saveQueue();
+                }
+                
             } else { 
                 lastTickTime = Date.now(); 
                 timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; 
             }
             isRunning = !isRunning; saveTimerState();
         }
-
         document.body.addEventListener('click', function() {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             if (ctx.state === 'suspended') ctx.resume();
@@ -749,6 +775,11 @@
                 timeLeft -= deltaSeconds;
                 lastTickTime = now; 
 
+                // Mantém o tempo atualizado na memória
+                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
+                    blocksQueue[currentBlockIndex].remainingTime = timeLeft;
+                }
+
                 if (timeLeft > 0) { 
                     updateDisplay(); saveTimerState(); 
                 } else {
@@ -757,7 +788,12 @@
                     clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
                     
                     if (currentMode === 'foco') {
-                        if(blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].completed = true; saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); }
+                        if(blocksQueue[currentBlockIndex]) { 
+                            blocksQueue[currentBlockIndex].completed = true; 
+                            delete blocksQueue[currentBlockIndex].remainingTime; // Limpa a memória
+                            saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); 
+                            saveQueue(); 
+                        }
                         completedFocosCount++; renderBlocksList();
                         if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
                     } else { loadBlock(currentBlockIndex + 1); }
