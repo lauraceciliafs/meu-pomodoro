@@ -662,25 +662,24 @@
 
         function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
 
-       function loadBlock(index) {
+        function loadBlock(index) {
             try {
                 // ARMADURA 1: Garante que a fila é uma lista válida
                 if (!blocksQueue || !Array.isArray(blocksQueue)) {
                     blocksQueue = []; 
                 }
 
-                // ARMADURA 2: Se estiver vazia, não aborta silenciosamente. 
-                // Ele zera o relógio e ATUALIZA A TELA para o modo Foco funcionar!
+                // ARMADURA 2: Esvazia a tela se não houver blocos
                 if (blocksQueue.length === 0) {
                     document.getElementById('current-subject').textContent = 'Nenhum bloco';
                     timeLeft = 0;
-                    totalSecondsCurrent = 1; // Evita erro de divisão por zero no círculo
+                    totalSecondsCurrent = 1; 
                     updateDisplay();
                     renderBlocksList();
                     return;
                 }
                 
-                // ARMADURA 3: Se o index se perder, volta para o 0
+                // ARMADURA 3: Se o index se perder, volta para a primeira matéria
                 if (index >= blocksQueue.length || index < 0 || isNaN(index)) {
                     index = 0; 
                 }
@@ -688,7 +687,7 @@
                 currentBlockIndex = index;
                 const block = blocksQueue[index];
                 
-                // ARMADURA 4: Se o bloco for nulo
+                // ARMADURA 4: Proteção contra blocos nulos vindo da nuvem
                 if (!block) {
                     document.getElementById('current-subject').textContent = 'Nenhum bloco';
                     timeLeft = 0;
@@ -697,21 +696,23 @@
                     return;
                 }
 
-                document.getElementById('current-subject').textContent = block.subject;
+                document.getElementById('current-subject').textContent = block.subject || "Estudo";
                 
-                // Puxa o tempo pausado ou total
+                // Puxa o tempo pausado ou total garantindo que é um número (Number)
                 if (block.remainingTime !== undefined && block.remainingTime > 0) {
-                    timeLeft = block.remainingTime;
+                    timeLeft = Number(block.remainingTime);
+                } else if (block.duration !== undefined && block.duration > 0) {
+                    timeLeft = Number(block.duration);
                 } else {
-                    timeLeft = block.duration;
+                    timeLeft = 25 * 60; // Fallback caso o dado da nuvem venha sem tempo
                 }
                 
-                totalSecondsCurrent = block.duration > 0 ? block.duration : 1; 
+                totalSecondsCurrent = block.duration > 0 ? Number(block.duration) : (25 * 60); 
                 updateDisplay();
                 renderBlocksList();
 
             } catch (erro) {
-                // Se der qualquer pane elétrica imprevisível, não trava a aba
+                console.error("Erro na leitura do bloco:", erro);
                 document.getElementById('current-subject').textContent = 'Erro ao carregar';
                 timeLeft = 0;
                 totalSecondsCurrent = 1;
@@ -783,6 +784,13 @@
 
        function toggleTimer() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
+
+            // 🛡️ PROTEÇÃO NOVA: Se tentar iniciar com o tempo zerado, recarrega a matéria para puxar os minutos de volta
+            if (!isRunning && timeLeft <= 0 && currentMode === 'foco') {
+                loadBlock(currentBlockIndex);
+                if (timeLeft <= 0) return; // Se mesmo assim o tempo for inválido, aborta para não quebrar
+            }
+
             if (isRunning) { 
                 clearInterval(timer); startBtn.textContent = 'Iniciar'; 
                 
@@ -798,11 +806,6 @@
             }
             isRunning = !isRunning; saveTimerState();
         }
-        document.body.addEventListener('click', function() {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            if (ctx.state === 'suspended') ctx.resume();
-        }, { once: true });
-
         function countdown() {
             const now = Date.now();
             const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
