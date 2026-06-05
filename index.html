@@ -630,7 +630,16 @@
             if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
         }
 
-        function playBlock(idx) { if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(idx); }
+        function playBlock(idx) { 
+            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
+            clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; 
+            
+            // CORREÇÃO: Se você clicar no botão de 'Play' de uma matéria, ele também força a ir para a aba Foco
+            currentMode = 'foco';
+            switchModeUI('foco');
+            
+            loadBlock(idx); 
+        }
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
         
         function saveEdit(idx) {
@@ -654,10 +663,26 @@
 
         function forceMode(mode) {
             clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
+            
             if (mode === 'foco') {
-                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) loadBlock(currentBlockIndex);
-                else { currentMode = 'foco'; switchModeUI('foco'); subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); }
-            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); }
+                // CORREÇÃO: Muda a variável e acende a aba Foco ANTES de tudo
+                currentMode = 'foco'; 
+                switchModeUI('foco'); 
+                
+                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) {
+                    loadBlock(currentBlockIndex);
+                } else { 
+                    subjectDisplay.textContent = "Sem blocos"; 
+                    timeLeft = 0; 
+                    totalSecondsCurrent = 1; 
+                    updateDisplay(); 
+                    saveTimerState(); 
+                }
+            } else if (mode === 'curta') { 
+                startPausa('curta'); 
+            } else if (mode === 'longa') { 
+                startPausa('longa'); 
+            }
         }
 
         function updateLivePause(type) { if (currentMode === type && !isRunning) startPausa(type); }
