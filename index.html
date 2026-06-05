@@ -694,10 +694,9 @@
                 }
 
                 if (blocksQueue.length === 0) {
-                    document.getElementById('current-subject').textContent = 'Nenhum bloco';
+                    subjectDisplay.textContent = 'Nenhum bloco';
                     timeLeft = 0;
                     totalSecondsCurrent = 1; 
-                    // Devolve a cor padrão vermelhinha se não tiver matérias
                     document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); 
                     updateDisplay();
                     renderBlocksList();
@@ -712,7 +711,7 @@
                 const block = blocksQueue[index];
                 
                 if (!block) {
-                    document.getElementById('current-subject').textContent = 'Nenhum bloco';
+                    subjectDisplay.textContent = 'Nenhum bloco';
                     timeLeft = 0;
                     totalSecondsCurrent = 1;
                     document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
@@ -720,9 +719,9 @@
                     return;
                 }
 
-                document.getElementById('current-subject').textContent = block.subject || "Estudo";
+                // CORREÇÃO: Usando a variável certa para não dar curto-circuito!
+                subjectDisplay.textContent = block.subject || "Estudo";
                 
-                // 🎨 A MÁGICA DO DESIGN AQUI: Puxa a cor exata que você escolheu para a matéria!
                 document.documentElement.style.setProperty('--accent-color', block.color || '#ff6b6b');
                 
                 if (block.remainingTime !== undefined && block.remainingTime > 0) {
@@ -739,13 +738,13 @@
 
             } catch (erro) {
                 console.error("Erro na leitura do bloco:", erro);
-                document.getElementById('current-subject').textContent = 'Erro ao carregar';
+                // Correção do erro no catch também
+                subjectDisplay.textContent = 'Erro ao carregar';
                 timeLeft = 0;
                 totalSecondsCurrent = 1;
                 updateDisplay();
             }
         }
-
         function startPausa(type) {
             currentMode = type; switchModeUI(type);
             const userMinutes = type === 'curta' ? (parseInt(inputBreakShort.value) || 5) : (parseInt(inputBreakLong.value) || 15);
