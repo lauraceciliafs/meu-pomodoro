@@ -850,6 +850,27 @@
                 console.error("Erro no botão Iniciar:", erro);
             }
         }
+        function resetTimer() {
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.textContent = 'Iniciar';
+
+            if (currentMode === 'foco') {
+                if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
+                    // Apaga o tempo salvo na memória para a matéria voltar ao tempo original
+                    delete blocksQueue[currentBlockIndex].remainingTime;
+                    saveQueue();
+                    loadBlock(currentBlockIndex);
+                }
+            } else if (currentMode === 'curta') {
+                startPausa('curta');
+            } else if (currentMode === 'longa') {
+                startPausa('longa');
+            }
+            
+            updateDisplay();
+            saveTimerState();
+        }
         function countdown() {
             const now = Date.now();
             const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
