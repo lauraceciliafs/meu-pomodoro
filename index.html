@@ -808,28 +808,47 @@
         }
 
        function toggleTimer() {
-            if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
+            try {
+                if (blocksQueue.length === 0 && currentMode === 'foco') { 
+                    alert("Adicione um bloco na lista antes de começar seu foco!"); 
+                    return; 
+                }
 
-            // 🛡️ PROTEÇÃO NOVA: Se tentar iniciar com o tempo zerado, recarrega a matéria para puxar os minutos de volta
-            if (!isRunning && timeLeft <= 0 && currentMode === 'foco') {
-                loadBlock(currentBlockIndex);
-                if (timeLeft <= 0) return; // Se mesmo assim o tempo for inválido, aborta para não quebrar
-            }
+                // 🛡️ PROTEÇÃO: Se tentar iniciar e o tempo estiver zerado, recarrega os minutos
+                if (!isRunning && timeLeft <= 0) {
+                    if (currentMode === 'foco') {
+                        loadBlock(currentBlockIndex);
+                    } else {
+                        startPausa(currentMode); 
+                    }
+                    
+                    // Se mesmo após recarregar o tempo continuar zerado, aborta para não travar
+                    if (timeLeft <= 0) return; 
+                }
 
-            if (isRunning) { 
-                clearInterval(timer); startBtn.textContent = 'Iniciar'; 
-                
-                // Salva o tempo pausado na matéria atual
-                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
-                    blocksQueue[currentBlockIndex].remainingTime = timeLeft;
-                    saveQueue();
+                if (isRunning) { 
+                    clearInterval(timer); 
+                    startBtn.textContent = 'Iniciar'; 
+                    
+                    // Salva o tempo pausado na matéria atual
+                    if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
+                        blocksQueue[currentBlockIndex].remainingTime = timeLeft;
+                        saveQueue();
+                    }
+                    
+                } else { 
+                    lastTickTime = Date.now(); 
+                    timer = setInterval(countdown, 1000); 
+                    startBtn.textContent = 'Pausar'; 
                 }
                 
-            } else { 
-                lastTickTime = Date.now(); 
-                timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; 
+                isRunning = !isRunning; 
+                saveTimerState();
+                updateDisplay(); // Força a tela a responder ao seu clique imediatamente
+                
+            } catch (erro) {
+                console.error("Erro no botão Iniciar:", erro);
             }
-            isRunning = !isRunning; saveTimerState();
         }
         function countdown() {
             const now = Date.now();
