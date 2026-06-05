@@ -689,22 +689,21 @@
 
         function loadBlock(index) {
             try {
-                // ARMADURA 1: Garante que a fila é uma lista válida
                 if (!blocksQueue || !Array.isArray(blocksQueue)) {
                     blocksQueue = []; 
                 }
 
-                // ARMADURA 2: Esvazia a tela se não houver blocos
                 if (blocksQueue.length === 0) {
                     document.getElementById('current-subject').textContent = 'Nenhum bloco';
                     timeLeft = 0;
                     totalSecondsCurrent = 1; 
+                    // Devolve a cor padrão vermelhinha se não tiver matérias
+                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); 
                     updateDisplay();
                     renderBlocksList();
                     return;
                 }
                 
-                // ARMADURA 3: Se o index se perder, volta para a primeira matéria
                 if (index >= blocksQueue.length || index < 0 || isNaN(index)) {
                     index = 0; 
                 }
@@ -712,24 +711,26 @@
                 currentBlockIndex = index;
                 const block = blocksQueue[index];
                 
-                // ARMADURA 4: Proteção contra blocos nulos vindo da nuvem
                 if (!block) {
                     document.getElementById('current-subject').textContent = 'Nenhum bloco';
                     timeLeft = 0;
                     totalSecondsCurrent = 1;
+                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
                     updateDisplay();
                     return;
                 }
 
                 document.getElementById('current-subject').textContent = block.subject || "Estudo";
                 
-                // Puxa o tempo pausado ou total garantindo que é um número (Number)
+                // 🎨 A MÁGICA DO DESIGN AQUI: Puxa a cor exata que você escolheu para a matéria!
+                document.documentElement.style.setProperty('--accent-color', block.color || '#ff6b6b');
+                
                 if (block.remainingTime !== undefined && block.remainingTime > 0) {
                     timeLeft = Number(block.remainingTime);
                 } else if (block.duration !== undefined && block.duration > 0) {
                     timeLeft = Number(block.duration);
                 } else {
-                    timeLeft = 25 * 60; // Fallback caso o dado da nuvem venha sem tempo
+                    timeLeft = 25 * 60; 
                 }
                 
                 totalSecondsCurrent = block.duration > 0 ? Number(block.duration) : (25 * 60); 
