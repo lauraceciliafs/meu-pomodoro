@@ -648,7 +648,7 @@
                 Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
                 
                 myChart = new Chart(ctx, {
-                    type: 'doughnut', // Gráfico de Rosca (mais bonito que o Pie/Pizza clássico)
+                    type: 'pie', // Gráfico de Pizza (Círculo 100% preenchido)
                     data: {
                         labels: labels,
                         datasets: [{
