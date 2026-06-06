@@ -802,9 +802,22 @@
         }
 
         function playAlarm() {
-            const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+            // Puxa o link exato que você salvou na engrenagem
+            let audioUrl = localStorage.getItem(getKey('AudioUrl'));
+            
+            // Se o campo estiver vazio, usa um som padrão garantido
+            if (!audioUrl || audioUrl.trim() === "") {
+                audioUrl = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
+            }
+
+            const audio = new Audio(audioUrl);
             audio.volume = 1.0;
-            audio.play().catch(e => console.log('O Notion bloqueou o áudio:', e));
+            
+            // Tenta tocar o áudio. Se o navegador/Notion bloquear por segurança, ele solta um alerta visual!
+            audio.play().catch(erro => {
+                console.log('O Notion bloqueou o áudio:', erro);
+                alert("⏰ O tempo acabou!");
+            });
         }
 
        function toggleTimer() {
