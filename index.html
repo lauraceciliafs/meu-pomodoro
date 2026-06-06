@@ -432,7 +432,9 @@
         progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
         progressBar.style.strokeDashoffset = circumference;
 
-        const customAudio = new Audio();
+       // Cria o elemento de áudio fisicamente no corpo da página para burlar o Notion
+        const alarmAudio = document.createElement('audio');
+        document.body.appendChild(alarmAudio);
 
        // ==========================================
         // ☁️ LÓGICA DA NUVEM (AUTO-SAVE & AUTO-LOAD)
@@ -818,29 +820,17 @@
                     return; 
                 }
 
-                // 🔓 O TRUQUE DEFINITIVO: Carrega a música ANTES de dar o play silencioso
+                // 🔓 O TRUQUE: Oculta o play fantasma. Apenas mandamos o navegador carregar o arquivo na memória enquanto você clica.
                 if (!isRunning) {
                     let audioUrl = localStorage.getItem(getKey('AudioUrl'));
                     if (!audioUrl || audioUrl.trim() === "") {
-                        // URL padrão segura
-                        audioUrl = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
+                        // Link oficial do Google (à prova de bloqueios de servidor)
+                        audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; 
                     }
-                    
-                    // Alimenta o áudio antes de tentar destravar
-                    if (customAudio.src !== audioUrl) {
-                        customAudio.src = audioUrl;
+                    if (alarmAudio.src !== audioUrl) {
+                        alarmAudio.src = audioUrl;
                     }
-                    
-                    customAudio.volume = 0; 
-                    let playPromise = customAudio.play();
-                    
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            customAudio.pause();
-                            customAudio.currentTime = 0;
-                            customAudio.volume = 1.0;
-                        }).catch(e => console.log("Aguardando permissão:", e));
-                    }
+                    alarmAudio.load(); 
                 }
 
                 if (!isRunning && timeLeft <= 0) {
