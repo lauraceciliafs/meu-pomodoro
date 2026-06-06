@@ -579,7 +579,7 @@
         // ==========================================
         // LÓGICA DO GRÁFICO (Chart.js)
         // ==========================================
-        function renderStats(period) {
+       function renderStats(period) {
             document.getElementById('btn-stat-hoje').classList.remove('active');
             document.getElementById('btn-stat-semana').classList.remove('active');
             document.getElementById('btn-stat-mes').classList.remove('active');
@@ -587,6 +587,7 @@
 
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             let aggregatedData = {}; 
+            let totalPeriodMinutes = 0; // Variável para somar o tempo total do aplicativo
 
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -612,6 +613,7 @@
                                 aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color };
                             }
                             aggregatedData[subj].minutes += history[dateStr][subj].minutes;
+                            totalPeriodMinutes += history[dateStr][subj].minutes;
                         }
                     }
                 }
@@ -624,31 +626,50 @@
             for (let subj in aggregatedData) {
                 if (aggregatedData[subj].minutes > 0) {
                     labels.push(subj);
-                    // Transforma os minutos em horas formatadas (ex: 1.5 horas)
-                    data.push((aggregatedData[subj].minutes / 60).toFixed(1)); 
+                    // CORREÇÃO: Usa os minutos puros para o gráfico conseguir desenhar até testes de 1 minuto!
+                    data.push(aggregatedData[subj].minutes); 
                     bgColors.push(aggregatedData[subj].color);
                 }
             }
 
             const emptyMsg = document.getElementById('stats-empty');
             const canvas = document.getElementById('statsChart');
+            
+            // MÁGICA VISUAL: Cria o texto de "Tempo Total" acima do gráfico (Igual sua foto de referência)
+            let totalDiv = document.getElementById('stats-total-time');
+            if (!totalDiv) {
+                totalDiv = document.createElement('div');
+                totalDiv.id = 'stats-total-time';
+                totalDiv.style.textAlign = 'center';
+                totalDiv.style.fontSize = '1.8rem';
+                totalDiv.style.fontFamily = 'var(--font-timer)';
+                totalDiv.style.fontWeight = 'bold';
+                totalDiv.style.margin = '5px 0 15px 0';
+                canvas.parentNode.insertBefore(totalDiv, canvas);
+            }
 
             if (data.length === 0) {
                 emptyMsg.style.display = 'block';
                 canvas.style.display = 'none';
+                totalDiv.style.display = 'none';
                 if (myChart) myChart.destroy();
             } else {
                 emptyMsg.style.display = 'none';
                 canvas.style.display = 'block';
+                totalDiv.style.display = 'block';
+                
+                // Calcula e formata o totalão para exibir (ex: 3h 29m)
+                let hTotal = Math.floor(totalPeriodMinutes / 60);
+                let mTotal = totalPeriodMinutes % 60;
+                totalDiv.textContent = hTotal > 0 ? `${hTotal}h ${mTotal}m` : `${mTotal}m`;
 
                 if (myChart) myChart.destroy();
                 const ctx = canvas.getContext('2d');
                 
-                // Define a cor da fonte global baseada no seu tema escuro/claro
                 Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
                 
                 myChart = new Chart(ctx, {
-                    type: 'pie', // Gráfico de Pizza (Círculo 100% preenchido)
+                    type: 'pie', // PIZZA CLÁSSICA (Círculo 100% preenchido)
                     data: {
                         labels: labels,
                         datasets: [{
@@ -672,8 +693,13 @@
                             },
                             tooltip: {
                                 callbacks: {
+                                    // Formata a caixinha preta ao passar o mouse para mostrar horas e minutos reais
                                     label: function(context) {
-                                        return ` ${context.raw} horas`;
+                                        let mins = context.raw;
+                                        let h = Math.floor(mins / 60);
+                                        let m = mins % 60;
+                                        let timeText = h > 0 ? `${h}h ${m}m` : `${m}m`;
+                                        return ` ${context.label}: ${timeText}`;
                                     }
                                 }
                             }
@@ -682,7 +708,6 @@
                 });
             }
         }
-
         function updateDisplay() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
             const hours = Math.floor(timeLeft / 3600); const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeLeft % 60).toString().padStart(2, '0');
