@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Pro Setup & History</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Cinzel:wght@500;600&family=Comfortaa:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Courier+Prime&family=Fira+Code:wght@400;500&family=Fredoka:wght@400;500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Merriweather:ital,wght@0,400;0,700&family=Montserrat:wght@400;500;600&family=Nunito:wght@400;500;600&family=Outfit:wght@400;500;600&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Roboto:wght@400;500&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -26,51 +27,31 @@
         }
 
         body {
-            margin: 0;
-            padding: 10px;
-            font-family: var(--font-text);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-            background-size: cover;
-            background-position: center;
-            background-color: transparent;
-            transition: background 0.5s ease;
+            margin: 0; padding: 10px; font-family: var(--font-text); color: var(--text-color);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            box-sizing: border-box; background-size: cover; background-position: center;
+            background-color: transparent; transition: background 0.5s ease;
         }
 
         .pomodoro-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 24px;
-            width: 100%;
-            max-width: 350px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            position: relative;
-            transition: all 0.3s ease;
-            overflow: hidden; 
+            background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color); border-radius: 20px; padding: 24px;
+            width: 100%; max-width: 350px; text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            position: relative; transition: all 0.3s ease; overflow: hidden; 
         }
 
         .top-btn {
-            position: absolute; top: 16px; background: none; border: none;
-            font-size: 1.1rem; cursor: pointer; opacity: 0.5;
-            transition: opacity 0.2s, transform 0.3s; color: var(--text-color); z-index: 10;
+            position: absolute; top: 16px; background: none; border: none; font-size: 1.1rem;
+            cursor: pointer; opacity: 0.5; transition: opacity 0.2s, transform 0.3s; color: var(--text-color); z-index: 10;
         }
         .top-btn:hover { opacity: 1; transform: scale(1.1); }
-        .settings-toggle { right: 16px; }
-        .settings-toggle:hover { transform: rotate(45deg); }
+        .settings-toggle { right: 16px; } .settings-toggle:hover { transform: rotate(45deg); }
         .history-toggle { left: 16px; }
+        .stats-toggle { left: 48px; }
 
         .cloud-status-indicator {
-            position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
-            font-size: 0.65rem; opacity: 0.5; display: flex; align-items: center; gap: 4px;
-            transition: opacity 0.3s, color 0.3s; z-index: 10;
+            position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem;
+            opacity: 0.5; display: flex; align-items: center; gap: 4px; transition: opacity 0.3s, color 0.3s; z-index: 10;
         }
         .cloud-status-indicator.syncing { opacity: 1; color: var(--accent-color); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
@@ -124,9 +105,8 @@
         #input-time { width: 55px; text-align: center; }
         
         .color-wrapper {
-            width: 31px; height: 31px; border-radius: 8px; overflow: hidden;
-            border: 1px solid var(--border-color); cursor: pointer;
-            display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.2s;
+            width: 31px; height: 31px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);
+            cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.2s;
         }
         .color-wrapper:hover { transform: scale(1.05); }
         .color-wrapper input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; padding: 0; background: none; }
@@ -217,6 +197,7 @@
 
     <div class="pomodoro-card">
         <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
+        <button class="top-btn stats-toggle" onclick="toggleStats()" title="Gráficos de Estudo">📈</button>
         
         <div class="cloud-status-indicator" id="cloud-indicator" title="Status da Sincronização">☁️ <span id="cloud-text">Local</span></div>
         
@@ -266,6 +247,22 @@
             </div>
             <div id="history-content"></div>
             <div id="clear-history-wrapper"></div>
+        </div>
+
+        <div class="overlay-panel" id="stats-panel">
+            <div class="panel-header">
+                <span class="panel-title">Horas Estudadas</span>
+                <button class="close-panel" onclick="toggleStats()">✖</button>
+            </div>
+            <div class="modes" style="margin-bottom: 20px;">
+                <button class="mode-btn active" id="btn-stat-hoje" onclick="renderStats('hoje')">Hoje</button>
+                <button class="mode-btn" id="btn-stat-semana" onclick="renderStats('semana')">Semana</button>
+                <button class="mode-btn" id="btn-stat-mes" onclick="renderStats('mes')">Mês</button>
+            </div>
+            <div style="position: relative; height: 200px; width: 100%;">
+                <canvas id="statsChart"></canvas>
+            </div>
+            <div id="stats-empty" class="empty-msg" style="display: none; margin-top: 30px;">Não há horas de estudo registradas neste período. Comece um foco!</div>
         </div>
 
         <div class="overlay-panel" id="settings-panel">
@@ -398,6 +395,9 @@
         const historyPanel = document.getElementById('history-panel');
         const historyContent = document.getElementById('history-content');
         
+        const statsPanel = document.getElementById('stats-panel');
+        let myChart = null; // Instância do gráfico
+        
         const blocksListContainer = document.getElementById('blocks-list');
         const emptyMsg = document.getElementById('empty-msg');
         
@@ -416,7 +416,6 @@
         progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
         progressBar.style.strokeDashoffset = circumference;
 
-        // Cria o elemento de áudio fisicamente no corpo da página para burlar o Notion
         const alarmAudio = document.createElement('audio');
         document.body.appendChild(alarmAudio);
 
@@ -516,7 +515,6 @@
             } catch(e) { setCloudStatus('error'); }
         }
 
-        // INTERCEPTADOR DE LOCALSTORAGE (O Cérebro do Auto-Save)
         const originalSetItem = localStorage.setItem;
         let autoSaveTimeout;
         
@@ -573,8 +571,117 @@
         function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
         function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); }
         function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
-        function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); }
-        function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); }
+        
+        function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); }
+        function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); }
+        function toggleStats() { if (!statsPanel.classList.contains('open')) renderStats('hoje'); statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); }
+
+        // ==========================================
+        // LÓGICA DO GRÁFICO (Chart.js)
+        // ==========================================
+        function renderStats(period) {
+            document.getElementById('btn-stat-hoje').classList.remove('active');
+            document.getElementById('btn-stat-semana').classList.remove('active');
+            document.getElementById('btn-stat-mes').classList.remove('active');
+            document.getElementById(`btn-stat-${period}`).classList.add('active');
+
+            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
+            let aggregatedData = {}; 
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            let startDate = new Date(today);
+            if (period === 'semana') {
+                const day = startDate.getDay(); 
+                const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); 
+                startDate.setDate(diff); 
+            } else if (period === 'mes') {
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            for (let dateStr in history) {
+                const parts = dateStr.split(', ');
+                const datePart = parts.length > 1 ? parts[1] : parts[0];
+                const [d, m, y] = datePart.split('/');
+                if (d && m && y) {
+                    const recordDate = new Date(y, m - 1, d);
+                    if (recordDate >= startDate && recordDate <= today) {
+                        for (let subj in history[dateStr]) {
+                            if (!aggregatedData[subj]) {
+                                aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color };
+                            }
+                            aggregatedData[subj].minutes += history[dateStr][subj].minutes;
+                        }
+                    }
+                }
+            }
+
+            const labels = [];
+            const data = [];
+            const bgColors = [];
+
+            for (let subj in aggregatedData) {
+                if (aggregatedData[subj].minutes > 0) {
+                    labels.push(subj);
+                    // Transforma os minutos em horas formatadas (ex: 1.5 horas)
+                    data.push((aggregatedData[subj].minutes / 60).toFixed(1)); 
+                    bgColors.push(aggregatedData[subj].color);
+                }
+            }
+
+            const emptyMsg = document.getElementById('stats-empty');
+            const canvas = document.getElementById('statsChart');
+
+            if (data.length === 0) {
+                emptyMsg.style.display = 'block';
+                canvas.style.display = 'none';
+                if (myChart) myChart.destroy();
+            } else {
+                emptyMsg.style.display = 'none';
+                canvas.style.display = 'block';
+
+                if (myChart) myChart.destroy();
+                const ctx = canvas.getContext('2d');
+                
+                // Define a cor da fonte global baseada no seu tema escuro/claro
+                Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                
+                myChart = new Chart(ctx, {
+                    type: 'doughnut', // Gráfico de Rosca (mais bonito que o Pie/Pizza clássico)
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: bgColors,
+                            borderWidth: 2,
+                            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim()
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { 
+                                    font: { family: "'Plus Jakarta Sans', sans-serif" },
+                                    padding: 15,
+                                    usePointStyle: true
+                                } 
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` ${context.raw} horas`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         function updateDisplay() {
             if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
@@ -588,7 +695,7 @@
         
         function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem(getKey('BgUrl'), url); }
         function updateAudioUrl(url) { localStorage.setItem(getKey('AudioUrl'), url); }
-        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem(getKey('TextColor'), color); }
+        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem(getKey('TextColor'), color); if(myChart) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
         function updateThemeBg() {
             const color = document.getElementById('theme-bg-color').value; const opacity = document.getElementById('theme-bg-opacity').value;
             let hex = color.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
@@ -598,7 +705,7 @@
         function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem(getKey('ShortBreakColor'), color); }
         function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem(getKey('LongBreakColor'), color); }
         
-        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-text', fontStr); localStorage.setItem(getKey('FontText'), fontStr); }
+        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-text', fontStr); localStorage.setItem(getKey('FontText'), fontStr); if(myChart) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
         function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-timer', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
 
         function addNewBlock() {
@@ -612,9 +719,7 @@
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
             clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; 
-            currentMode = 'foco';
-            switchModeUI('foco');
-            loadBlock(idx); 
+            currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
         }
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
         
@@ -641,91 +746,48 @@
             clearInterval(timer); isRunning = false; startBtn.textContent = "Iniciar";
             
             if (mode === 'foco') {
-                currentMode = 'foco'; 
-                switchModeUI('foco'); 
-                
+                currentMode = 'foco'; switchModeUI('foco'); 
                 if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) {
                     loadBlock(currentBlockIndex);
                 } else { 
-                    subjectDisplay.textContent = "Sem blocos"; 
-                    timeLeft = 0; 
-                    totalSecondsCurrent = 1; 
-                    updateDisplay(); 
-                    saveTimerState(); 
+                    subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); 
                 }
-            } else if (mode === 'curta') { 
-                startPausa('curta'); 
-            } else if (mode === 'longa') { 
-                startPausa('longa'); 
-            }
+            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); }
         }
 
         function updateLivePause(type) { 
-            if (type === 'curta') {
-                localStorage.setItem(getKey('BreakShort'), inputBreakShort.value);
-            } else {
-                localStorage.setItem(getKey('BreakLong'), inputBreakLong.value);
-            }
-            
+            if (type === 'curta') { localStorage.setItem(getKey('BreakShort'), inputBreakShort.value); } 
+            else { localStorage.setItem(getKey('BreakLong'), inputBreakLong.value); }
             if (currentMode === type && !isRunning) startPausa(type); 
-            
             silentCloudSave();
         }
 
         function loadBlock(index) {
             try {
-                if (!blocksQueue || !Array.isArray(blocksQueue)) {
-                    blocksQueue = []; 
-                }
-
+                if (!blocksQueue || !Array.isArray(blocksQueue)) { blocksQueue = []; }
                 if (blocksQueue.length === 0) {
-                    subjectDisplay.textContent = 'Nenhum bloco';
-                    timeLeft = 0;
-                    totalSecondsCurrent = 1; 
-                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); 
-                    updateDisplay();
-                    renderBlocksList();
-                    return;
+                    subjectDisplay.textContent = 'Nenhum bloco'; timeLeft = 0; totalSecondsCurrent = 1; 
+                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); renderBlocksList(); return;
                 }
-                
-                if (index >= blocksQueue.length || index < 0 || isNaN(index)) {
-                    index = 0; 
-                }
-                
-                currentBlockIndex = index;
-                const block = blocksQueue[index];
-                
+                if (index >= blocksQueue.length || index < 0 || isNaN(index)) { index = 0; }
+                currentBlockIndex = index; const block = blocksQueue[index];
                 if (!block) {
-                    subjectDisplay.textContent = 'Nenhum bloco';
-                    timeLeft = 0;
-                    totalSecondsCurrent = 1;
-                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
-                    updateDisplay();
-                    return;
+                    subjectDisplay.textContent = 'Nenhum bloco'; timeLeft = 0; totalSecondsCurrent = 1; document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); return;
                 }
 
                 subjectDisplay.textContent = block.subject || "Estudo";
-                
                 document.documentElement.style.setProperty('--accent-color', block.color || '#ff6b6b');
                 
-                if (block.remainingTime !== undefined && block.remainingTime > 0) {
-                    timeLeft = Number(block.remainingTime);
-                } else if (block.duration !== undefined && block.duration > 0) {
-                    timeLeft = Number(block.duration);
-                } else {
-                    timeLeft = 25 * 60; 
-                }
+                if (block.remainingTime !== undefined && block.remainingTime > 0) { timeLeft = Number(block.remainingTime); } 
+                else if (block.duration !== undefined && block.duration > 0) { timeLeft = Number(block.duration); } 
+                else { timeLeft = 25 * 60; }
                 
                 totalSecondsCurrent = block.duration > 0 ? Number(block.duration) : (25 * 60); 
-                updateDisplay();
-                renderBlocksList();
+                updateDisplay(); renderBlocksList();
 
             } catch (erro) {
                 console.error("Erro na leitura do bloco:", erro);
-                subjectDisplay.textContent = 'Erro ao carregar';
-                timeLeft = 0;
-                totalSecondsCurrent = 1;
-                updateDisplay();
+                subjectDisplay.textContent = 'Erro ao carregar'; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay();
             }
         }
 
@@ -788,128 +850,77 @@
         function playAlarm() {
             alarmAudio.currentTime = 0; 
             alarmAudio.volume = 1.0;
-            
             let promise = alarmAudio.play();
-            
             if (promise !== undefined) {
                 promise.catch(erro => {
                     console.log('Bloqueio absoluto do iframe:', erro);
-                    subjectDisplay.textContent = "⏰ TEMPO ESGOTADO!";
-                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
+                    subjectDisplay.textContent = "⏰ TEMPO ESGOTADO!"; document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
                 });
             }
         }
 
        function toggleTimer() {
             try {
-                if (blocksQueue.length === 0 && currentMode === 'foco') { 
-                    alert("Adicione um bloco na lista antes de começar seu foco!"); 
-                    return; 
-                }
-
+                if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
                 if (!isRunning) {
                     let audioUrl = localStorage.getItem(getKey('AudioUrl'));
-                    if (!audioUrl || audioUrl.trim() === "") {
-                        audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; 
-                    }
-                    if (alarmAudio.src !== audioUrl) {
-                        alarmAudio.src = audioUrl;
-                    }
+                    if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
+                    if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
                     alarmAudio.load(); 
                 }
 
                 if (!isRunning && timeLeft <= 0) {
-                    if (currentMode === 'foco') {
-                        loadBlock(currentBlockIndex);
-                    } else {
-                        startPausa(currentMode); 
-                    }
+                    if (currentMode === 'foco') { loadBlock(currentBlockIndex); } else { startPausa(currentMode); }
                     if (timeLeft <= 0) return; 
                 }
 
                 if (isRunning) { 
-                    clearInterval(timer); 
-                    startBtn.textContent = 'Iniciar'; 
-                    
-                    if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
-                        blocksQueue[currentBlockIndex].remainingTime = timeLeft;
-                        saveQueue();
-                    }
-                    
+                    clearInterval(timer); startBtn.textContent = 'Iniciar'; 
+                    if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; saveQueue(); }
                 } else { 
-                    lastTickTime = Date.now(); 
-                    timer = setInterval(countdown, 1000); 
-                    startBtn.textContent = 'Pausar'; 
+                    lastTickTime = Date.now(); timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; 
                 }
                 
-                isRunning = !isRunning; 
-                saveTimerState();
-                updateDisplay(); 
-                
-            } catch (erro) {
-                console.error("Erro no botão Iniciar:", erro);
-            }
+                isRunning = !isRunning; saveTimerState(); updateDisplay(); 
+            } catch (erro) { console.error("Erro no botão Iniciar:", erro); }
         }
 
         function resetTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            startBtn.textContent = 'Iniciar';
-
+            clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar';
             if (currentMode === 'foco') {
                 if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                    delete blocksQueue[currentBlockIndex].remainingTime;
-                    saveQueue();
-                    loadBlock(currentBlockIndex);
+                    delete blocksQueue[currentBlockIndex].remainingTime; saveQueue(); loadBlock(currentBlockIndex);
                 }
-            } else if (currentMode === 'curta') {
-                startPausa('curta');
-            } else if (currentMode === 'longa') {
-                startPausa('longa');
-            }
-            
-            updateDisplay();
-            saveTimerState();
+            } else if (currentMode === 'curta') { startPausa('curta'); } else if (currentMode === 'longa') { startPausa('longa'); }
+            updateDisplay(); saveTimerState();
         }
 
         function countdown() {
-            const now = Date.now();
-            const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
-            
+            const now = Date.now(); const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
             if (deltaSeconds > 0) {
-                timeLeft -= deltaSeconds;
-                lastTickTime = now; 
-
-                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
-                    blocksQueue[currentBlockIndex].remainingTime = timeLeft;
-                }
+                timeLeft -= deltaSeconds; lastTickTime = now; 
+                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; }
 
                 if (timeLeft > 0) { 
                     updateDisplay(); saveTimerState(); 
                 } else {
-                    timeLeft = 0; 
-                    updateDisplay();
-                    clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
+                    timeLeft = 0; updateDisplay(); clearInterval(timer); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
                     
                     if (currentMode === 'foco') {
                         if(blocksQueue[currentBlockIndex]) { 
-                            blocksQueue[currentBlockIndex].completed = true; 
-                            delete blocksQueue[currentBlockIndex].remainingTime; 
-                            saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); 
-                            saveQueue(); 
+                            blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
+                            saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); 
                         }
                         completedFocosCount++; renderBlocksList();
                         if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
                     } else { 
-                        currentMode = 'foco'; 
-                        loadBlock(currentBlockIndex + 1); 
+                        currentMode = 'foco'; loadBlock(currentBlockIndex + 1); 
                     }
                     saveTimerState();
                 }
             }
         }
 
-        // Carregamento Isolado Total
         document.addEventListener('DOMContentLoaded', () => {
             const savedBgUrl = localStorage.getItem(getKey('BgUrl')) || '';
             const savedAudioUrl = localStorage.getItem(getKey('AudioUrl')) || '';
@@ -919,13 +930,11 @@
             shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
             longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
     
-            // Valores corretos das pausas
             const savedBreakShort = localStorage.getItem(getKey('BreakShort')) || '5';
             const savedBreakLong = localStorage.getItem(getKey('BreakLong')) || '15';
             document.getElementById('input-break-short').value = savedBreakShort;
             document.getElementById('input-break-long').value = savedBreakLong;
 
-            // Variáveis de Fontes Corrigidas
             const savedFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
             const savedFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
 
@@ -936,11 +945,9 @@
             document.getElementById('theme-bg-opacity').value = savedBgOpacity;
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
-            
             document.getElementById('theme-font-text').value = savedFontText;
             document.getElementById('theme-font-timer').value = savedFontTimer;
 
-            // Restaura Bin ID e Key (Nuvem Assíncrona)
             const savedBinId = localStorage.getItem(getKey('BinId')) || '';
             const savedMasterKey = localStorage.getItem(getKey('MasterKey')) || '';
             document.getElementById('input-bin-id').value = savedBinId;
@@ -948,60 +955,32 @@
 
             if (savedBgUrl.trim() !== "") document.body.style.backgroundImage = `url('${savedBgUrl}')`;
             document.documentElement.style.setProperty('--text-color', savedTextColor);
-            let hex = savedBgColor.replace('#', '');
-            let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
+            let hex = savedBgColor.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
-            
-            document.documentElement.style.setProperty('--font-text', savedFontText);
-            document.documentElement.style.setProperty('--font-timer', savedFontTimer);
+            document.documentElement.style.setProperty('--font-text', savedFontText); document.documentElement.style.setProperty('--font-timer', savedFontTimer);
 
             renderBlocksList();
             
             const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
-            
             if (savedState && savedState.isRunning) {
-                // Se fechou a aba com o relógio RODANDO, ele continua de onde parou
-                currentMode = savedState.currentMode; 
-                currentBlockIndex = savedState.currentBlockIndex || 0; 
-                completedFocosCount = savedState.completedFocosCount || 0; 
-                totalSecondsCurrent = savedState.totalSecondsCurrent;
+                currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex || 0; 
+                completedFocosCount = savedState.completedFocosCount || 0; totalSecondsCurrent = savedState.totalSecondsCurrent;
 
-                const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); 
-                timeLeft = savedState.timeLeft - elapsedSeconds;
-                
-                if (timeLeft <= 0) { 
-                    timeLeft = 0; isRunning = false; 
-                } else { 
-                    isRunning = true; lastTickTime = Date.now(); 
-                    timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; 
-                }
+                const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); timeLeft = savedState.timeLeft - elapsedSeconds;
+                if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
+                else { isRunning = true; lastTickTime = Date.now(); timer = setInterval(countdown, 1000); startBtn.textContent = 'Pausar'; }
                 
                 switchModeUI(currentMode);
                 if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
-                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; 
-                    document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b');
+                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b');
                 } else if (currentMode !== 'foco') {
-                    subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; 
-                    document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
-                } else { 
-                    subjectDisplay.textContent = "Sem blocos"; 
-                }
+                    subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
+                } else { subjectDisplay.textContent = "Sem blocos"; }
                 updateDisplay();
-                
             } else {
-                // A MÁGICA: Se o relógio estava parado, ignora a memória antiga e FORÇA o foco!
-                currentMode = 'foco';
-                switchModeUI('foco');
-                if (blocksQueue.length > 0) { 
-                    let firstUncompleted = blocksQueue.findIndex(b => !b.completed); 
-                    loadBlock(firstUncompleted !== -1 ? firstUncompleted : 0); 
-                } else { 
-                    subjectDisplay.textContent = "Sem blocos";
-                    timeLeft = 0;
-                    totalSecondsCurrent = 1;
-                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
-                    updateDisplay(); 
-                }
+                currentMode = 'foco'; switchModeUI('foco');
+                if (blocksQueue.length > 0) { let firstUncompleted = blocksQueue.findIndex(b => !b.completed); loadBlock(firstUncompleted !== -1 ? firstUncompleted : 0); } 
+                else { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); }
             }
         });
     </script>
