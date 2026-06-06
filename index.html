@@ -802,23 +802,15 @@
         }
 
         function playAlarm() {
-            let audioUrl = localStorage.getItem(getKey('AudioUrl'));
-            
-            if (!audioUrl || audioUrl.trim() === "") {
-                audioUrl = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
-            }
-            
-            // Usa o objeto de áudio global já destravado, em vez de criar um novo (new Audio)
-            customAudio.src = audioUrl;
+            // Como a música já foi carregada no clique do botão Iniciar, agora é só tocar!
+            customAudio.currentTime = 0; // Volta para o início do som
             customAudio.volume = 1.0;
             
-            // Agora o navegador permite tocar sem barrar!
             customAudio.play().catch(erro => {
-                console.log('O Notion/Navegador bloqueou o áudio definitivamente:', erro);
-                alert("⏰ O tempo acabou! (O áudio foi bloqueado pela segurança do navegador)");
+                console.log('O Notion bloqueou o áudio:', erro);
+                alert("⏰ O tempo acabou!");
             });
         }
-
        function toggleTimer() {
             try {
                 if (blocksQueue.length === 0 && currentMode === 'foco') { 
@@ -826,18 +818,31 @@
                     return; 
                 }
 
-                // 🔓 TRUQUE DA AUTOPLAY POLICY: Destrava o áudio com o clique do usuário
+                // 🔓 O TRUQUE DEFINITIVO: Carrega a música ANTES de dar o play silencioso
                 if (!isRunning) {
-                    customAudio.volume = 0; // Coloca no mudo
-                    // Toca e pausa rapidinho só para validar a permissão
-                    customAudio.play().then(() => {
-                        customAudio.pause();
-                        customAudio.currentTime = 0;
-                        customAudio.volume = 1.0; // Devolve o volume para quando for tocar de verdade
-                    }).catch(e => console.log("Aguardando permissão de mídia"));
+                    let audioUrl = localStorage.getItem(getKey('AudioUrl'));
+                    if (!audioUrl || audioUrl.trim() === "") {
+                        // URL padrão segura
+                        audioUrl = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
+                    }
+                    
+                    // Alimenta o áudio antes de tentar destravar
+                    if (customAudio.src !== audioUrl) {
+                        customAudio.src = audioUrl;
+                    }
+                    
+                    customAudio.volume = 0; 
+                    let playPromise = customAudio.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            customAudio.pause();
+                            customAudio.currentTime = 0;
+                            customAudio.volume = 1.0;
+                        }).catch(e => console.log("Aguardando permissão:", e));
+                    }
                 }
 
-                // 🛡️ Proteção de tempo zerado
                 if (!isRunning && timeLeft <= 0) {
                     if (currentMode === 'foco') {
                         loadBlock(currentBlockIndex);
