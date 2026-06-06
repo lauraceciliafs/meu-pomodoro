@@ -802,21 +802,20 @@
         }
 
         function playAlarm() {
-            // Puxa o link exato que você salvou na engrenagem
             let audioUrl = localStorage.getItem(getKey('AudioUrl'));
             
-            // Se o campo estiver vazio, usa um som padrão garantido
             if (!audioUrl || audioUrl.trim() === "") {
                 audioUrl = 'https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3';
             }
-
-            const audio = new Audio(audioUrl);
-            audio.volume = 1.0;
             
-            // Tenta tocar o áudio. Se o navegador/Notion bloquear por segurança, ele solta um alerta visual!
-            audio.play().catch(erro => {
-                console.log('O Notion bloqueou o áudio:', erro);
-                alert("⏰ O tempo acabou!");
+            // Usa o objeto de áudio global já destravado, em vez de criar um novo (new Audio)
+            customAudio.src = audioUrl;
+            customAudio.volume = 1.0;
+            
+            // Agora o navegador permite tocar sem barrar!
+            customAudio.play().catch(erro => {
+                console.log('O Notion/Navegador bloqueou o áudio definitivamente:', erro);
+                alert("⏰ O tempo acabou! (O áudio foi bloqueado pela segurança do navegador)");
             });
         }
 
@@ -827,15 +826,24 @@
                     return; 
                 }
 
-                // 🛡️ PROTEÇÃO: Se tentar iniciar e o tempo estiver zerado, recarrega os minutos
+                // 🔓 TRUQUE DA AUTOPLAY POLICY: Destrava o áudio com o clique do usuário
+                if (!isRunning) {
+                    customAudio.volume = 0; // Coloca no mudo
+                    // Toca e pausa rapidinho só para validar a permissão
+                    customAudio.play().then(() => {
+                        customAudio.pause();
+                        customAudio.currentTime = 0;
+                        customAudio.volume = 1.0; // Devolve o volume para quando for tocar de verdade
+                    }).catch(e => console.log("Aguardando permissão de mídia"));
+                }
+
+                // 🛡️ Proteção de tempo zerado
                 if (!isRunning && timeLeft <= 0) {
                     if (currentMode === 'foco') {
                         loadBlock(currentBlockIndex);
                     } else {
                         startPausa(currentMode); 
                     }
-                    
-                    // Se mesmo após recarregar o tempo continuar zerado, aborta para não travar
                     if (timeLeft <= 0) return; 
                 }
 
@@ -843,7 +851,6 @@
                     clearInterval(timer); 
                     startBtn.textContent = 'Iniciar'; 
                     
-                    // Salva o tempo pausado na matéria atual
                     if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
                         blocksQueue[currentBlockIndex].remainingTime = timeLeft;
                         saveQueue();
@@ -857,7 +864,7 @@
                 
                 isRunning = !isRunning; 
                 saveTimerState();
-                updateDisplay(); // Força a tela a responder ao seu clique imediatamente
+                updateDisplay(); 
                 
             } catch (erro) {
                 console.error("Erro no botão Iniciar:", erro);
