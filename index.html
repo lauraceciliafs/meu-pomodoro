@@ -157,9 +157,23 @@
 
         .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
         .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
-        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; }
+        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; position: relative; }
         .history-item-subject { display: flex; align-items: center; gap: 6px; }
         .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        
+        /* NOVO: Estilo do botão de deletar matéria (invisível por padrão) */
+        .history-delete-btn {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: opacity 0.2s, transform 0.2s;
+            padding: 0 4px;
+        }
+        .history-delete-btn:hover { transform: scale(1.2); }
+        .history-item:hover .history-delete-btn { opacity: 1; }
         
         .clear-history-btn {
             width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
@@ -367,10 +381,9 @@
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // Variáveis de Estado
         let isRunning = false;
         let timeLeft = 0;
-        let cronoTime = 0; // O cronometro voltou!
+        let cronoTime = 0;
         let totalSecondsCurrent = 0;
         let lastTickTime = Date.now();
         
@@ -566,19 +579,21 @@
             localStorage.setItem(getKey('History'), JSON.stringify(history));
         }
 
-        // Função de deletar um item (Botão ✖ do Histórico)
+        // FUNÇÃO DE DELETAR ITEM (AGORA SEM O POP-UP BLOQUEADO)
         function deleteHistoryItem(dateStr, subject) {
-            if (!confirm(`Apagar '${subject}' do dia ${dateStr}?`)) return;
-            
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (history[dateStr] && history[dateStr][subject]) {
                 delete history[dateStr][subject];
+                
                 if (Object.keys(history[dateStr]).length === 0) {
                     delete history[dateStr];
                 }
+                
                 localStorage.setItem(getKey('History'), JSON.stringify(history));
                 silentCloudSave();
                 renderHistory();
+                // Força o gráfico a se atualizar também!
+                if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
             }
         }
 
@@ -594,22 +609,22 @@
                     const data = history[date][subj]; const displayTime = formatMinutesDisplay(data.minutes);
                     const safeSubj = subj.replace(/'/g, "\\'"); 
                     
-                    // AQUI ESTÁ O BOTÃO ✖ DO HISTÓRICO:
                     html += `
                         <div class="history-item">
                             <div class="history-item-subject">
                                 <span class="history-item-dot" style="background-color: ${data.color}"></span>
                                 <span>${subj}</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
                                 <span><strong>${displayTime}</strong></span>
-                                <button class="action-btn" style="opacity: 0.6; color: var(--text-color);" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar este registro">✖</button>
+                                <button class="history-delete-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar da lista">✖</button>
                             </div>
                         </div>`;
                 }
                 html += `</div>`; historyContent.innerHTML += html;
             });
         }
+        
         function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
         function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); }
         function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
@@ -813,7 +828,6 @@
             }
         }
 
-        // Clicar no Play (▶️) joga a materia pro Cronometro também!
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
@@ -1020,12 +1034,11 @@
             } catch (erro) { console.error("Erro no botão Iniciar:", erro); }
         }
 
-        // AQUI O CRONO SALVA SOZINHO:
         function resetTimer() {
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
             
             if (currentMode === 'crono') {
-                if (cronoTime >= 5) { // Se passar de 5 seg ele já salva
+                if (cronoTime >= 5) {
                     let subj = "Estudo Livre";
                     let col = "#b197fc";
                     
