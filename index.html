@@ -1013,9 +1013,8 @@
                     if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
                     if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
                     
-                    alarmAudio.volume = 0.001;
-                    alarmAudio.loop = true; 
-                    alarmAudio.play().catch(e => console.log('Autoplay bloqueado:', e));
+                    // CARREGA O ÁUDIO EM SILÊNCIO (Sem dar play no fundo)
+                    alarmAudio.load(); 
                 }
 
                 if (!isRunning && timeLeft <= 0) {
