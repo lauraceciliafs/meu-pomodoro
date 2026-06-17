@@ -56,10 +56,10 @@
         .cloud-status-indicator.syncing { opacity: 1; color: var(--accent-color); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        .modes { display: flex; justify-content: center; gap: 12px; margin-bottom: 10px; }
+        .modes { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .mode-btn {
             background: none; border: none; color: var(--text-color); opacity: 0.4;
-            padding: 4px 8px; font-size: 0.8rem; font-family: var(--font-text);
+            padding: 4px 6px; font-size: 0.75rem; font-family: var(--font-text);
             letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease;
         }
         .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
@@ -205,8 +205,9 @@
 
         <div class="modes">
             <button class="mode-btn active" id="btn-foco" onclick="forceMode('foco')">Foco</button>
-            <button class="mode-btn" id="btn-curta" onclick="forceMode('curta')">Pausa Curta</button>
-            <button class="mode-btn" id="btn-longa" onclick="forceMode('longa')">Pausa Longa</button>
+            <button class="mode-btn" id="btn-crono" onclick="forceMode('crono')">Crono</button>
+            <button class="mode-btn" id="btn-curta" onclick="forceMode('curta')">P. Curta</button>
+            <button class="mode-btn" id="btn-longa" onclick="forceMode('longa')">P. Longa</button>
         </div>
 
         <div class="timer-container" id="main-timer-container">
@@ -366,9 +367,9 @@
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // Variáveis de Estado
         let isRunning = false;
         let timeLeft = 0;
+        let cronoTime = 0; // Nova variável pro cronômetro
         let totalSecondsCurrent = 0;
         let lastTickTime = Date.now();
         
@@ -384,8 +385,6 @@
         let shortBreakColor = '#8ce99a';
         let longBreakColor = '#74c0fc';
 
-        // 🚀 MOTOR WEB WORKER: RELÓGIO BLINDADO
-        // Ele roda em uma thread secreta do navegador para não congelar em abas minimizadas
         const workerScript = `
             let interval;
             self.onmessage = function(e) {
@@ -403,7 +402,6 @@
         function startInterval() { timerWorker.postMessage('start'); }
         function stopInterval() { timerWorker.postMessage('stop'); }
 
-        // Elementos DOM
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
         const subjectDisplay = document.getElementById('current-subject-display');
@@ -428,7 +426,6 @@
         const inputBreakLong = document.getElementById('input-break-long');
         const inputAudioUrl = document.getElementById('input-audio-url');
 
-        // Configuração do SVG Circle
         const radius = 45;
         const circumference = 2 * Math.PI * radius;
         progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
@@ -437,9 +434,6 @@
         const alarmAudio = document.createElement('audio');
         document.body.appendChild(alarmAudio);
 
-        // ==========================================
-        // ☁️ LÓGICA DA NUVEM (AUTO-SAVE & AUTO-LOAD)
-        // ==========================================
         const cloudIndicator = document.getElementById('cloud-indicator');
         const cloudText = document.getElementById('cloud-text');
         const inputBinId = document.getElementById('input-bin-id');
@@ -545,14 +539,10 @@
 
         window.addEventListener('load', autoCloudLoad);
 
-        // ==========================================
-        // LÓGICA LOCAL (Timer, Histórico, Configurações)
-        // ==========================================
-
         function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
 
         function saveTimerState() {
-            const state = { timeLeft: timeLeft, totalSecondsCurrent: totalSecondsCurrent, currentMode: currentMode, currentBlockIndex: currentBlockIndex, completedFocosCount: completedFocosCount, isRunning: isRunning, lastTick: Date.now() };
+            const state = { timeLeft: timeLeft, cronoTime: cronoTime, totalSecondsCurrent: totalSecondsCurrent, currentMode: currentMode, currentBlockIndex: currentBlockIndex, completedFocosCount: completedFocosCount, isRunning: isRunning, lastTick: Date.now() };
             localStorage.setItem(getKey('TimerState'), JSON.stringify(state));
         }
 
@@ -615,9 +605,6 @@
             hideTimerElements(statsPanel.classList.contains('open'));
         }
 
-        // ==========================================
-        // LÓGICA DO GRÁFICO (Chart.js) - PIZZA CLÁSSICA
-        // ==========================================
         function renderStats(period) {
             document.getElementById('btn-stat-hoje').classList.remove('active');
             document.getElementById('btn-stat-semana').classList.remove('active');
@@ -745,11 +732,19 @@
         }
 
         function updateDisplay() {
+            let timeToFormat = currentMode === 'crono' ? cronoTime : timeLeft;
             if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
-            const hours = Math.floor(timeLeft / 3600); const minutes = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeLeft % 60).toString().padStart(2, '0');
+            const hours = Math.floor(timeToFormat / 3600); const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeToFormat % 60).toString().padStart(2, '0');
+            
             if (hours > 0) { display.textContent = `${hours}:${minutes}:${seconds}`; display.style.fontSize = "1.8rem"; } 
             else { display.textContent = `${minutes}:${seconds}`; display.style.fontSize = "2.5rem"; }
-            if (totalSecondsCurrent > 0) { const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; progressBar.style.strokeDashoffset = offset; }
+            
+            if (currentMode === 'crono') {
+                const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
+                progressBar.style.strokeDashoffset = offset;
+            } else if (totalSecondsCurrent > 0) { 
+                const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; progressBar.style.strokeDashoffset = offset; 
+            }
         }
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
@@ -779,7 +774,7 @@
 
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; 
+            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
             currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
         }
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
@@ -797,14 +792,14 @@
         function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
         function confirmDelete(idx) {
             blocksQueue.splice(idx, 1);
-            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; loadBlock(currentBlockIndex); }
+            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause(); loadBlock(currentBlockIndex); }
             saveQueue(); deletingBlockIndex = -1; renderBlocksList();
             if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; saveTimerState(); }
         }
         function cancelDelete() { deletingBlockIndex = -1; renderBlocksList(); }
 
         function forceMode(mode) {
-            stopInterval(); isRunning = false; startBtn.textContent = "Iniciar";
+            stopInterval(); isRunning = false; startBtn.textContent = "Iniciar"; alarmAudio.pause();
             
             if (mode === 'foco') {
                 currentMode = 'foco'; switchModeUI('foco'); 
@@ -813,7 +808,16 @@
                 } else { 
                     subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); 
                 }
-            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); }
+            } else if (mode === 'curta') { 
+                startPausa('curta'); 
+            } else if (mode === 'longa') { 
+                startPausa('longa'); 
+            } else if (mode === 'crono') {
+                currentMode = 'crono'; switchModeUI('crono');
+                subjectDisplay.textContent = "Estudo Livre";
+                document.documentElement.style.setProperty('--accent-color', '#b197fc');
+                updateDisplay(); saveTimerState();
+            }
         }
 
         function updateLivePause(type) { 
@@ -909,6 +913,7 @@
         }
 
         function playAlarm() {
+            alarmAudio.loop = false;
             alarmAudio.currentTime = 0; 
             alarmAudio.volume = 1.0;
             let promise = alarmAudio.play();
@@ -922,12 +927,23 @@
 
        function toggleTimer() {
             try {
+                if (currentMode === 'crono') {
+                    if (isRunning) { stopInterval(); startBtn.textContent = 'Iniciar'; } 
+                    else { lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                    isRunning = !isRunning; saveTimerState(); updateDisplay();
+                    return;
+                }
+
                 if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
+                
                 if (!isRunning) {
                     let audioUrl = localStorage.getItem(getKey('AudioUrl'));
                     if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
                     if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
-                    alarmAudio.load(); 
+                    
+                    alarmAudio.volume = 0.001;
+                    alarmAudio.loop = true; 
+                    alarmAudio.play().catch(e => console.log('Autoplay bloqueado:', e));
                 }
 
                 if (!isRunning && timeLeft <= 0) {
@@ -936,7 +952,7 @@
                 }
 
                 if (isRunning) { 
-                    stopInterval(); startBtn.textContent = 'Iniciar'; 
+                    stopInterval(); startBtn.textContent = 'Iniciar'; alarmAudio.pause();
                     if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; saveQueue(); }
                 } else { 
                     lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; 
@@ -947,7 +963,19 @@
         }
 
         function resetTimer() {
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar';
+            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
+            
+            if (currentMode === 'crono') {
+                if (cronoTime >= 60) {
+                    if(confirm("Deseja salvar esse tempo no histórico de 'Estudo Livre'?")) {
+                        saveToHistory("Estudo Livre", "#b197fc", cronoTime);
+                        if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
+                    }
+                }
+                cronoTime = 0; updateDisplay(); saveTimerState();
+                return;
+            }
+
             if (currentMode === 'foco') {
                 if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
                     delete blocksQueue[currentBlockIndex].remainingTime; saveQueue(); loadBlock(currentBlockIndex);
@@ -959,7 +987,15 @@
         function countdown() {
             const now = Date.now(); const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
             if (deltaSeconds > 0) {
-                timeLeft -= deltaSeconds; lastTickTime = now; 
+                lastTickTime = now; 
+                
+                if (currentMode === 'crono') {
+                    cronoTime += deltaSeconds;
+                    updateDisplay(); saveTimerState();
+                    return;
+                }
+
+                timeLeft -= deltaSeconds;
                 if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; }
 
                 if (timeLeft > 0) { 
@@ -1023,19 +1059,32 @@
             renderBlocksList();
             
             const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
+            if (savedState) {
+                cronoTime = savedState.cronoTime || 0;
+            }
+
             if (savedState && savedState.isRunning) {
                 currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex || 0; 
                 completedFocosCount = savedState.completedFocosCount || 0; totalSecondsCurrent = savedState.totalSecondsCurrent;
 
-                const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); timeLeft = savedState.timeLeft - elapsedSeconds;
-                if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
-                else { isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); 
+                
+                if (currentMode === 'crono') {
+                    cronoTime += elapsedSeconds;
+                    isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar';
+                } else {
+                    timeLeft = savedState.timeLeft - elapsedSeconds;
+                    if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
+                    else { isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                }
                 
                 switchModeUI(currentMode);
                 if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
                     subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b');
-                } else if (currentMode !== 'foco') {
+                } else if (currentMode === 'curta' || currentMode === 'longa') {
                     subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
+                } else if (currentMode === 'crono') {
+                    subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
                 } else { subjectDisplay.textContent = "Sem blocos"; }
                 updateDisplay();
             } else {
