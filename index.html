@@ -988,22 +988,27 @@
                 isRunning = !isRunning; saveTimerState(); updateDisplay(); 
             } catch (erro) { console.error("Erro no botão Iniciar:", erro); }
         }
-
-        function resetTimer() {
+function resetTimer() {
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
             
             if (currentMode === 'crono') {
-                if (cronoTime >= 60) {
+                if (cronoTime >= 5) { // Reduzido para 5 segundos para facilitar seu teste
                     let subj = "Estudo Livre";
                     let col = "#b197fc";
                     if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
                         subj = blocksQueue[currentBlockIndex].subject;
                         col = blocksQueue[currentBlockIndex].color;
                     }
-                    if(confirm(`Deseja salvar esse tempo no histórico de '${subj}'?`)) {
-                        saveToHistory(subj, col, cronoTime);
-                        if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
-                    }
+                    
+                    // MÁGICA: Salva direto sem perguntar para burlar o bloqueio do Notion
+                    saveToHistory(subj, col, cronoTime);
+                    if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
+                    
+                    // Dá o feedback visual na própria tela do relógio
+                    subjectDisplay.textContent = "✅ Tempo Salvo!";
+                    setTimeout(() => {
+                        if(currentMode === 'crono') subjectDisplay.textContent = subj;
+                    }, 3000);
                 }
                 cronoTime = 0; updateDisplay(); saveTimerState();
                 return;
