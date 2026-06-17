@@ -369,7 +369,7 @@
 
         let isRunning = false;
         let timeLeft = 0;
-        let cronoTime = 0; // Nova variável pro cronômetro
+        let cronoTime = 0;
         let totalSecondsCurrent = 0;
         let lastTickTime = Date.now();
         
@@ -734,7 +734,10 @@
         function updateDisplay() {
             let timeToFormat = currentMode === 'crono' ? cronoTime : timeLeft;
             if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
-            const hours = Math.floor(timeToFormat / 3600); const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeToFormat % 60).toString().padStart(2, '0');
+            
+            const hours = Math.floor(timeToFormat / 3600); 
+            const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); 
+            const seconds = (timeToFormat % 60).toString().padStart(2, '0');
             
             if (hours > 0) { display.textContent = `${hours}:${minutes}:${seconds}`; display.style.fontSize = "1.8rem"; } 
             else { display.textContent = `${minutes}:${seconds}`; display.style.fontSize = "2.5rem"; }
@@ -769,14 +772,32 @@
             const color = inputColor.value; const minutes = parseInt(inputTime.value) || 25;
             blocksQueue.push({ id: Date.now(), subject: subject, color: color, duration: minutes * 60, completed: false });
             saveQueue(); inputSubject.value = ""; renderBlocksList();
-            if (blocksQueue.length === 1 && currentMode === 'foco' && !isRunning) { loadBlock(0); }
+            if (blocksQueue.length === 1 && !isRunning) { 
+                if (currentMode === 'foco') loadBlock(0); 
+                else if (currentMode === 'crono') {
+                    currentBlockIndex = 0;
+                    subjectDisplay.textContent = blocksQueue[0].subject;
+                    document.documentElement.style.setProperty('--accent-color', blocksQueue[0].color);
+                    updateDisplay();
+                }
+            }
         }
 
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-            currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
+            
+            if (currentMode === 'crono') {
+                currentBlockIndex = idx;
+                let block = blocksQueue[currentBlockIndex];
+                subjectDisplay.textContent = block.subject;
+                document.documentElement.style.setProperty('--accent-color', block.color);
+                updateDisplay(); saveTimerState(); renderBlocksList();
+            } else {
+                currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
+            }
         }
+        
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
         
         function saveEdit(idx) {
@@ -784,7 +805,7 @@
             if (newSubj !== "") blocksQueue[idx].subject = newSubj;
             blocksQueue[idx].color = newColor; 
             if (newTime > 0) { blocksQueue[idx].duration = newTime * 60; if (idx === currentBlockIndex && currentMode === 'foco') { totalSecondsCurrent = blocksQueue[idx].duration; if (!isRunning) timeLeft = blocksQueue[idx].duration; updateDisplay(); } }
-            if (idx === currentBlockIndex && currentMode === 'foco') { subjectDisplay.textContent = blocksQueue[idx].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color); }
+            if (idx === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono')) { subjectDisplay.textContent = blocksQueue[idx].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color); }
             saveQueue(); saveTimerState(); editingBlockIndex = -1; renderBlocksList();
         }
         function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
@@ -814,9 +835,14 @@
                 startPausa('longa'); 
             } else if (mode === 'crono') {
                 currentMode = 'crono'; switchModeUI('crono');
-                subjectDisplay.textContent = "Estudo Livre";
-                document.documentElement.style.setProperty('--accent-color', '#b197fc');
-                updateDisplay(); saveTimerState();
+                if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
+                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject;
+                    document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
+                } else {
+                    subjectDisplay.textContent = "Estudo Livre";
+                    document.documentElement.style.setProperty('--accent-color', '#b197fc');
+                }
+                updateDisplay(); saveTimerState(); renderBlocksList();
             }
         }
 
@@ -870,7 +896,8 @@
             if (blocksQueue.length > 0) emptyMsg.style.display = "none"; else emptyMsg.style.display = "block";
             blocksListContainer.innerHTML = "";
             blocksQueue.forEach((block, idx) => {
-                const item = document.createElement('div'); const isActive = (idx === currentBlockIndex && currentMode === 'foco' && !block.completed);
+                const item = document.createElement('div'); 
+                const isActive = (idx === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono') && !block.completed);
                 item.className = `block-item ${isActive ? 'current-active' : ''}`;
                 const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)'; const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
                 let contentHTML = ''; const displayDuration = formatMinutesDisplay(block.duration / 60);
@@ -967,8 +994,14 @@
             
             if (currentMode === 'crono') {
                 if (cronoTime >= 60) {
-                    if(confirm("Deseja salvar esse tempo no histórico de 'Estudo Livre'?")) {
-                        saveToHistory("Estudo Livre", "#b197fc", cronoTime);
+                    let subj = "Estudo Livre";
+                    let col = "#b197fc";
+                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
+                        subj = blocksQueue[currentBlockIndex].subject;
+                        col = blocksQueue[currentBlockIndex].color;
+                    }
+                    if(confirm(`Deseja salvar esse tempo no histórico de '${subj}'?`)) {
+                        saveToHistory(subj, col, cronoTime);
                         if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
                     }
                 }
@@ -1084,7 +1117,11 @@
                 } else if (currentMode === 'curta' || currentMode === 'longa') {
                     subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
                 } else if (currentMode === 'crono') {
-                    subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
+                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
+                        subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
+                    } else {
+                        subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
+                    }
                 } else { subjectDisplay.textContent = "Sem blocos"; }
                 updateDisplay();
             } else {
