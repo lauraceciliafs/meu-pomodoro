@@ -56,6 +56,21 @@
         .cloud-status-indicator.syncing { opacity: 1; color: var(--accent-color); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
+        /* Estilo do Card Regressivo da Prova */
+        .exam-countdown-box {
+            background: rgba(125, 125, 125, 0.06); padding: 6px 12px; border-radius: 12px;
+            margin: 20px auto 4px auto; border: 1px dashed var(--border-color);
+            display: inline-block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2px;
+            transition: all 0.3s ease;
+        }
+
+        /* Estilo das Horas Líquidas Diárias */
+        .net-hours-badge {
+            font-size: 0.75rem; font-weight: 600; opacity: 0.8;
+            margin-top: -12px; margin-bottom: 16px; display: block;
+            letter-spacing: 0.3px;
+        }
+
         .modes { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
         .mode-btn {
             background: none; border: none; color: var(--text-color); opacity: 0.4;
@@ -65,7 +80,7 @@
         .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
 
         .timer-container {
-            position: relative; width: 160px; height: 160px; margin: 10px auto 20px auto;
+            position: relative; width: 160px; height: 160px; margin: 10px auto 14px auto;
             display: flex; justify-content: center; align-items: center;
         }
         .timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); width: 100%; height: 100%; }
@@ -161,19 +176,14 @@
         .history-item-subject { display: flex; align-items: center; gap: 6px; }
         .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         
-        /* NOVO: Estilo do botão de deletar matéria (invisível por padrão) */
-        .history-delete-btn {
-            opacity: 0;
-            background: none;
-            border: none;
-            color: var(--accent-color);
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: opacity 0.2s, transform 0.2s;
-            padding: 0 4px;
+        .history-item-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
+        .history-item:hover .history-item-actions { opacity: 1; }
+        .history-action-btn {
+            background: none; border: none; color: var(--text-color);
+            cursor: pointer; font-size: 0.8rem; transition: transform 0.2s; 
+            padding: 0 2px; filter: grayscale(100%); opacity: 0.7;
         }
-        .history-delete-btn:hover { transform: scale(1.2); }
-        .history-item:hover .history-delete-btn { opacity: 1; }
+        .history-action-btn:hover { transform: scale(1.2); filter: none; opacity: 1; }
         
         .clear-history-btn {
             width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
@@ -217,6 +227,8 @@
         
         <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
 
+        <div id="exam-countdown" class="exam-countdown-box" style="display: none;"></div>
+
         <div class="modes">
             <button class="mode-btn active" id="btn-foco" onclick="forceMode('foco')">Foco</button>
             <button class="mode-btn" id="btn-crono" onclick="forceMode('crono')">Crono</button>
@@ -234,6 +246,8 @@
                 <h1 class="timer-display" id="timer-display">00:00</h1>
             </div>
         </div>
+
+        <span id="net-hours-today" class="net-hours-badge">0m líquidas hoje</span>
 
         <div class="controls" id="main-controls">
             <button class="main-btn" id="start-btn" onclick="toggleTimer()">Iniciar</button>
@@ -285,6 +299,18 @@
                 <span class="panel-title">Configurações Gerais</span>
                 <button class="close-panel" onclick="toggleSettings()">✖</button>
             </div>
+
+            <div class="setting-group flex-row" style="background: rgba(125,125,125,0.05); padding: 10px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed var(--border-color);">
+                <div>
+                    <span class="setting-label">📅 Nome da Prova / Edital</span>
+                    <input type="text" id="input-exam-name" class="setting-input" placeholder="Ex: Banco do Brasil, ENEM" onchange="saveExamSettings()">
+                </div>
+                <div>
+                    <span class="setting-label">📆 Data do Exame</span>
+                    <input type="date" id="input-exam-date" class="setting-input" onchange="saveExamSettings()">
+                </div>
+            </div>
+
             <div class="setting-group flex-row">
                 <div>
                     <span class="setting-label">Pausa Curta (min)</span>
@@ -395,6 +421,7 @@
         
         let editingBlockIndex = -1;
         let deletingBlockIndex = -1;
+        let editingHistoryItem = null; 
         
         let shortBreakColor = '#8ce99a';
         let longBreakColor = '#74c0fc';
@@ -492,7 +519,9 @@
                     fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif",
                     fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif",
                     breakShort: localStorage.getItem(getKey('BreakShort')) || '5',
-                    breakLong: localStorage.getItem(getKey('BreakLong')) || '15'
+                    breakLong: localStorage.getItem(getKey('BreakLong')) || '15',
+                    examName: localStorage.getItem(getKey('ExamName')) || '',
+                    examDate: localStorage.getItem(getKey('ExamDate')) || ''
                 }
             };
 
@@ -534,6 +563,8 @@
                     originalSetItem.call(localStorage, getKey('FontTimer'), s.fontTimer);
                     if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort);
                     if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
+                    if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName);
+                    if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
                 }
                 
                 sessionStorage.setItem('CloudSynced', 'true');
@@ -566,6 +597,66 @@
             return m > 0 ? `${h}h ${m}min` : `${h}h`;
         }
 
+        // NOVO: Função para calcular Horas Líquidas de Hoje
+        function calculateNetHoursToday() {
+            const history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
+            const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            let totalMins = 0;
+            
+            if (history[dateStr]) {
+                for (let subj in history[dateStr]) {
+                    totalMins += history[dateStr][subj].minutes || 0;
+                }
+            }
+            
+            const badge = document.getElementById('net-hours-today');
+            if (badge) {
+                if (totalMins < 60) {
+                    badge.textContent = `${totalMins}m líquidas hoje`;
+                } else {
+                    const h = Math.floor(totalMins / 60);
+                    const m = totalMins % 60;
+                    badge.textContent = `${h}h ${m}m líquidas hoje`;
+                }
+            }
+        }
+
+        // NOVO: Função para Calcular e Atualizar a Contagem Regressiva da Prova
+        function updateExamCountdown() {
+            const name = localStorage.getItem(getKey('ExamName')) || '';
+            const dateStr = localStorage.getItem(getKey('ExamDate')) || '';
+            const displayBox = document.getElementById('exam-countdown');
+            
+            if (!dateStr || !name) {
+                displayBox.style.display = 'none';
+                return;
+            }
+            
+            const examDate = new Date(dateStr + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const diffTime = examDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0) {
+                displayBox.innerHTML = `⏳ Faltam <strong>${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}</strong> para o <strong>${name}</strong>`;
+                displayBox.style.display = 'inline-block';
+            } else if (diffDays === 0) {
+                displayBox.innerHTML = `🎉 <strong>Chegou o Dia!</strong> Boa sorte no ${name}!`;
+                displayBox.style.display = 'inline-block';
+            } else {
+                displayBox.style.display = 'none'; // Passou da data, esconde
+            }
+        }
+
+        function saveExamSettings() {
+            localStorage.setItem(getKey('ExamName'), document.getElementById('input-exam-name').value.trim());
+            localStorage.setItem(getKey('ExamDate'), document.getElementById('input-exam-date').value);
+            updateExamCountdown();
+            silentCloudSave();
+        }
+
         function saveToHistory(subject, color, durationInSeconds) {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
@@ -577,24 +668,53 @@
             
             history[dateStr][subject].minutes += minsToAdd;
             localStorage.setItem(getKey('History'), JSON.stringify(history));
+            calculateNetHoursToday(); // Atualiza contador na tela principal
         }
 
-        // FUNÇÃO DE DELETAR ITEM (AGORA SEM O POP-UP BLOQUEADO)
         function deleteHistoryItem(dateStr, subject) {
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (history[dateStr] && history[dateStr][subject]) {
                 delete history[dateStr][subject];
-                
                 if (Object.keys(history[dateStr]).length === 0) {
                     delete history[dateStr];
                 }
-                
                 localStorage.setItem(getKey('History'), JSON.stringify(history));
                 silentCloudSave();
                 renderHistory();
-                // Força o gráfico a se atualizar também!
+                calculateNetHoursToday(); // Atualiza contador
                 if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
             }
+        }
+
+        function saveEditHistory(dateStr, oldSubject) {
+            const safeOldSubj = oldSubject.replace(/\\'/g, "'");
+            const newSubj = document.getElementById('edit-hist-subj').value.trim();
+            const newMins = parseInt(document.getElementById('edit-hist-mins').value);
+            const newColor = document.getElementById('edit-hist-color').value;
+
+            if (!newSubj || isNaN(newMins) || newMins < 1) return; 
+
+            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
+            if (history[dateStr] && history[dateStr][safeOldSubj]) {
+                if (newSubj !== safeOldSubj) {
+                    if (history[dateStr][newSubj]) {
+                        history[dateStr][newSubj].minutes += newMins;
+                        history[dateStr][newSubj].color = newColor; 
+                    } else {
+                        history[dateStr][newSubj] = { minutes: newMins, color: newColor };
+                    }
+                    delete history[dateStr][safeOldSubj];
+                } else {
+                    history[dateStr][safeOldSubj].minutes = newMins;
+                    history[dateStr][safeOldSubj].color = newColor;
+                }
+                localStorage.setItem(getKey('History'), JSON.stringify(history));
+                silentCloudSave();
+            }
+            editingHistoryItem = null;
+            renderHistory();
+            calculateNetHoursToday(); // Atualiza contador
+            if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
         }
 
         function renderHistory() {
@@ -603,41 +723,62 @@
             historyContent.innerHTML = '';
             if (dates.length === 0) { historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda.</div>'; clearWrapper.style.display = 'none'; return; }
             clearWrapper.style.display = 'block'; resetClearHistoryUI(); 
+            
             dates.forEach(date => {
                 let html = `<div class="history-day"><span class="history-date-title">${date}</span>`;
                 for (let subj in history[date]) {
                     const data = history[date][subj]; const displayTime = formatMinutesDisplay(data.minutes);
                     const safeSubj = subj.replace(/'/g, "\\'"); 
                     
-                    html += `
-                        <div class="history-item">
-                            <div class="history-item-subject">
-                                <span class="history-item-dot" style="background-color: ${data.color}"></span>
-                                <span>${subj}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 4px;">
-                                <span><strong>${displayTime}</strong></span>
-                                <button class="history-delete-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar da lista">✖</button>
-                            </div>
-                        </div>`;
+                    if (editingHistoryItem && editingHistoryItem.date === date && editingHistoryItem.subject === subj) {
+                        html += `
+                            <div class="history-item" style="background: rgba(125,125,125,0.08); padding: 6px; border-radius: 8px;">
+                                <div style="display:flex; gap: 5px; align-items:center; width:100%;">
+                                    <input type="text" id="edit-hist-subj" class="inline-input" value="${subj}" style="flex-grow:1; min-width: 0;">
+                                    <div class="color-wrapper" style="width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;">
+                                        <input type="color" id="edit-hist-color" value="${data.color}" style="width: 32px; height: 32px;">
+                                    </div>
+                                    <input type="number" id="edit-hist-mins" class="inline-input time" value="${data.minutes}" min="1">
+                                    <button class="action-btn" onclick="saveEditHistory('${date}', '${safeSubj}')">✅</button>
+                                    <button class="action-btn" onclick="cancelEditHistory()">❌</button>
+                                </div>
+                            </div>`;
+                    } else {
+                        html += `
+                            <div class="history-item">
+                                <div class="history-item-subject">
+                                    <span class="history-item-dot" style="background-color: ${data.color}"></span>
+                                    <span>${subj}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span><strong>${displayTime}</strong></span>
+                                    <div class="history-item-actions">
+                                        <button class="history-action-btn" onclick="startEditHistory('${date}', '${safeSubj}')" title="Editar">✏️</button>
+                                        <button class="history-action-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar">✖</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
                 }
                 html += `</div>`; historyContent.innerHTML += html;
             });
         }
         
+        function startEditHistory(dateStr, subject) { editingHistoryItem = { date: dateStr, subject: subject.replace(/\\'/g, "'") }; renderHistory(); }
+        function cancelEditHistory() { editingHistoryItem = null; renderHistory(); }
         function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
-        function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); }
+        function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); calculateNetHoursToday(); }
         function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
         
         function hideTimerElements(hide) {
             document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1';
+            document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8';
             document.getElementById('main-controls').style.opacity = hide ? '0' : '1';
         }
 
         function toggleHistory() { 
             if (!historyPanel.classList.contains('open')) renderHistory(); 
-            historyPanel.classList.toggle('open'); 
-            settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); 
+            historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); 
             hideTimerElements(historyPanel.classList.contains('open'));
         }
         function toggleSettings() { 
@@ -696,9 +837,7 @@
 
             for (let subj in aggregatedData) {
                 if (aggregatedData[subj].minutes > 0) {
-                    labels.push(subj);
-                    data.push(aggregatedData[subj].minutes); 
-                    bgColors.push(aggregatedData[subj].color);
+                    labels.push(subj); data.push(aggregatedData[subj].minutes); bgColors.push(aggregatedData[subj].color);
                 }
             }
 
@@ -707,33 +846,22 @@
 
             let totalDiv = document.getElementById('stats-total-time');
             if (!totalDiv) {
-                totalDiv = document.createElement('div');
-                totalDiv.id = 'stats-total-time';
-                totalDiv.style.textAlign = 'center';
-                totalDiv.style.fontSize = '2rem';
-                totalDiv.style.fontFamily = 'var(--font-timer)';
-                totalDiv.style.fontWeight = 'bold';
-                totalDiv.style.margin = '5px 0 15px 0';
-                canvas.parentNode.insertBefore(totalDiv, canvas);
+                totalDiv = document.createElement('div'); totalDiv.id = 'stats-total-time';
+                totalDiv.style.textAlign = 'center'; totalDiv.style.fontSize = '2rem';
+                totalDiv.style.fontFamily = 'var(--font-timer)'; totalDiv.style.fontWeight = 'bold';
+                totalDiv.style.margin = '5px 0 15px 0'; canvas.parentNode.insertBefore(totalDiv, canvas);
             }
 
             if (data.length === 0) {
-                emptyMsg.style.display = 'block';
-                canvas.style.display = 'none';
-                totalDiv.style.display = 'none';
+                emptyMsg.style.display = 'block'; canvas.style.display = 'none'; totalDiv.style.display = 'none';
                 if (myChart) myChart.destroy();
             } else {
-                emptyMsg.style.display = 'none';
-                canvas.style.display = 'block';
-                totalDiv.style.display = 'block';
-
-                let hTotal = Math.floor(totalPeriodMinutes / 60);
-                let mTotal = totalPeriodMinutes % 60;
+                emptyMsg.style.display = 'none'; canvas.style.display = 'block'; totalDiv.style.display = 'block';
+                let hTotal = Math.floor(totalPeriodMinutes / 60); let mTotal = totalPeriodMinutes % 60;
                 totalDiv.textContent = hTotal > 0 ? `${hTotal}h ${mTotal}m` : `${mTotal}m`;
 
                 if (myChart) myChart.destroy();
                 const ctx = canvas.getContext('2d');
-                
                 Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
                 
                 myChart = new Chart(ctx, {
@@ -741,32 +869,22 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            data: data,
-                            backgroundColor: bgColors,
-                            borderWidth: 2,
+                            data: data, backgroundColor: bgColors, borderWidth: 2,
                             borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim()
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         plugins: {
                             legend: { 
                                 position: 'bottom', 
-                                labels: { 
-                                    font: { family: "'Plus Jakarta Sans', sans-serif" },
-                                    padding: 15,
-                                    usePointStyle: true
-                                } 
+                                labels: { font: { family: "'Plus Jakarta Sans', sans-serif" }, padding: 15, usePointStyle: true } 
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        let mins = context.raw;
-                                        let h = Math.floor(mins / 60);
-                                        let m = mins % 60;
-                                        let timeText = h > 0 ? `${h}h ${m}m` : `${m}m`;
-                                        return ` ${context.label}: ${timeText}`;
+                                        let mins = context.raw; let h = Math.floor(mins / 60); let m = mins % 60;
+                                        return ` ${context.label}: ${h > 0 ? h+'h '+m+'m' : m+'m'}`;
                                     }
                                 }
                             }
@@ -796,7 +914,6 @@
         }
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
-        
         function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem(getKey('BgUrl'), url); }
         function updateAudioUrl(url) { localStorage.setItem(getKey('AudioUrl'), url); }
         function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem(getKey('TextColor'), color); if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
@@ -808,7 +925,6 @@
         }
         function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem(getKey('ShortBreakColor'), color); }
         function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem(getKey('LongBreakColor'), color); }
-        
         function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-text', fontStr); localStorage.setItem(getKey('FontText'), fontStr); if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
         function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-timer', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
 
@@ -820,10 +936,8 @@
             if (blocksQueue.length === 1 && !isRunning) { 
                 if (currentMode === 'foco') loadBlock(0); 
                 else if (currentMode === 'crono') {
-                    currentBlockIndex = 0;
-                    subjectDisplay.textContent = blocksQueue[0].subject;
-                    document.documentElement.style.setProperty('--accent-color', blocksQueue[0].color);
-                    updateDisplay();
+                    currentBlockIndex = 0; subjectDisplay.textContent = blocksQueue[0].subject;
+                    document.documentElement.style.setProperty('--accent-color', blocksQueue[0].color); updateDisplay();
                 }
             }
         }
@@ -831,20 +945,15 @@
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-            
             if (currentMode === 'crono') {
-                currentBlockIndex = idx;
-                let block = blocksQueue[currentBlockIndex];
-                subjectDisplay.textContent = block.subject;
-                document.documentElement.style.setProperty('--accent-color', block.color);
-                updateDisplay(); saveTimerState(); renderBlocksList();
+                currentBlockIndex = idx; let block = blocksQueue[currentBlockIndex]; subjectDisplay.textContent = block.subject;
+                document.documentElement.style.setProperty('--accent-color', block.color); updateDisplay(); saveTimerState(); renderBlocksList();
             } else {
                 currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
             }
         }
         
         function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
-        
         function saveEdit(idx) {
             const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value); const newColor = document.getElementById(`edit-color-${idx}`).value; 
             if (newSubj !== "") blocksQueue[idx].subject = newSubj;
@@ -854,7 +963,6 @@
             saveQueue(); saveTimerState(); editingBlockIndex = -1; renderBlocksList();
         }
         function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
-
         function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
         function confirmDelete(idx) {
             blocksQueue.splice(idx, 1);
@@ -866,26 +974,18 @@
 
         function forceMode(mode) {
             stopInterval(); isRunning = false; startBtn.textContent = "Iniciar"; alarmAudio.pause();
-            
             if (mode === 'foco') {
                 currentMode = 'foco'; switchModeUI('foco'); 
-                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) {
-                    loadBlock(currentBlockIndex);
-                } else { 
-                    subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); 
-                }
-            } else if (mode === 'curta') { 
-                startPausa('curta'); 
-            } else if (mode === 'longa') { 
-                startPausa('longa'); 
-            } else if (mode === 'crono') {
+                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) { loadBlock(currentBlockIndex); } 
+                else { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); }
+            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); } 
+            else if (mode === 'crono') {
                 currentMode = 'crono'; switchModeUI('crono');
                 if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
                     subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject;
                     document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
                 } else {
-                    subjectDisplay.textContent = "Estudo Livre";
-                    document.documentElement.style.setProperty('--accent-color', '#b197fc');
+                    subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
                 }
                 updateDisplay(); saveTimerState(); renderBlocksList();
             }
@@ -910,7 +1010,6 @@
                 if (!block) {
                     subjectDisplay.textContent = 'Nenhum bloco'; timeLeft = 0; totalSecondsCurrent = 1; document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); return;
                 }
-
                 subjectDisplay.textContent = block.subject || "Estudo";
                 document.documentElement.style.setProperty('--accent-color', block.color || '#ff6b6b');
                 
@@ -920,11 +1019,7 @@
                 
                 totalSecondsCurrent = block.duration > 0 ? Number(block.duration) : (25 * 60); 
                 updateDisplay(); renderBlocksList();
-
-            } catch (erro) {
-                console.error("Erro na leitura do bloco:", erro);
-                subjectDisplay.textContent = 'Erro ao carregar'; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay();
-            }
+            } catch (erro) { console.error(erro); }
         }
 
         function startPausa(type) {
@@ -953,7 +1048,7 @@
                         <div class="block-info-wrapper">
                             <div class="block-text-group" style="gap: 5px; align-items: center;">
                                 <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
-                                <div class="color-wrapper" style="width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-shadow: 0 0 2px rgba(0,0,0,0.2);">
+                                <div class="color-wrapper" style="width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;">
                                     <input type="color" id="edit-color-${idx}" value="${block.color}" style="width: 32px; height: 32px;">
                                 </div>
                                 <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
@@ -974,7 +1069,7 @@
                                 <span class="block-duration">${displayDuration}</span>
                             </div>
                             <div class="block-actions">
-                                <button class="action-btn" onclick="playBlock(${idx})" title="Estudar esta matéria">▶️</button>
+                                <button class="action-btn" onclick="playBlock(${idx})" title="Estudar matéria">▶️</button>
                                 <button class="action-btn" onclick="startEdit(${idx})" title="Editar">✏️</button>
                                 <button class="action-btn" onclick="startDelete(${idx})" title="Remover">✖</button>
                             </div>
@@ -985,13 +1080,10 @@
         }
 
         function playAlarm() {
-            alarmAudio.loop = false;
-            alarmAudio.currentTime = 0; 
-            alarmAudio.volume = 1.0;
+            alarmAudio.loop = false; alarmAudio.currentTime = 0; alarmAudio.volume = 1.0;
             let promise = alarmAudio.play();
             if (promise !== undefined) {
                 promise.catch(erro => {
-                    console.log('Bloqueio absoluto do iframe:', erro);
                     subjectDisplay.textContent = "⏰ TEMPO ESGOTADO!"; document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
                 });
             }
@@ -1002,70 +1094,47 @@
                 if (currentMode === 'crono') {
                     if (isRunning) { stopInterval(); startBtn.textContent = 'Iniciar'; } 
                     else { lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
-                    isRunning = !isRunning; saveTimerState(); updateDisplay();
-                    return;
+                    isRunning = !isRunning; saveTimerState(); updateDisplay(); return;
                 }
-
                 if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
-                
                 if (!isRunning) {
                     let audioUrl = localStorage.getItem(getKey('AudioUrl'));
                     if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
                     if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
-                    
-                    // CARREGA O ÁUDIO EM SILÊNCIO (Sem dar play no fundo)
                     alarmAudio.load(); 
                 }
-
                 if (!isRunning && timeLeft <= 0) {
                     if (currentMode === 'foco') { loadBlock(currentBlockIndex); } else { startPausa(currentMode); }
                     if (timeLeft <= 0) return; 
                 }
-
                 if (isRunning) { 
                     stopInterval(); startBtn.textContent = 'Iniciar'; alarmAudio.pause();
                     if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; saveQueue(); }
-                } else { 
-                    lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; 
-                }
-                
+                } else { lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
                 isRunning = !isRunning; saveTimerState(); updateDisplay(); 
-            } catch (erro) { console.error("Erro no botão Iniciar:", erro); }
+            } catch (erro) { console.error(erro); }
         }
 
         function resetTimer() {
             stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-            
             if (currentMode === 'crono') {
                 if (cronoTime >= 5) {
-                    let subj = "Estudo Livre";
-                    let col = "#b197fc";
-                    
+                    let subj = "Estudo Livre"; let col = "#b197fc";
                     if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                        subj = blocksQueue[currentBlockIndex].subject;
-                        col = blocksQueue[currentBlockIndex].color;
+                        subj = blocksQueue[currentBlockIndex].subject; col = blocksQueue[currentBlockIndex].color;
                     }
-                    
                     try {
                         saveToHistory(subj, col, cronoTime);
                         subjectDisplay.textContent = "✅ Tempo Salvo!";
-                        
                         setTimeout(() => {
                             if(currentMode === 'crono') {
-                                if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject;
-                                } else {
-                                    subjectDisplay.textContent = "Estudo Livre";
-                                }
+                                subjectDisplay.textContent = (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) ? blocksQueue[currentBlockIndex].subject : "Estudo Livre";
                             }
                         }, 3000);
-                        
-                    } catch(e) { console.error("Erro ao salvar:", e); }
+                    } catch(e) { console.error(e); }
                 }
-                cronoTime = 0; updateDisplay(); saveTimerState();
-                return;
+                cronoTime = 0; updateDisplay(); saveTimerState(); return;
             }
-
             if (currentMode === 'foco') {
                 if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
                     delete blocksQueue[currentBlockIndex].remainingTime; saveQueue(); loadBlock(currentBlockIndex);
@@ -1078,21 +1147,14 @@
             const now = Date.now(); const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
             if (deltaSeconds > 0) {
                 lastTickTime = now; 
-                
-                if (currentMode === 'crono') {
-                    cronoTime += deltaSeconds;
-                    updateDisplay(); saveTimerState();
-                    return;
-                }
+                if (currentMode === 'crono') { cronoTime += deltaSeconds; updateDisplay(); saveTimerState(); return; }
 
                 timeLeft -= deltaSeconds;
                 if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; }
 
-                if (timeLeft > 0) { 
-                    updateDisplay(); saveTimerState(); 
-                } else {
+                if (timeLeft > 0) { updateDisplay(); saveTimerState(); } 
+                else {
                     timeLeft = 0; updateDisplay(); stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
-                    
                     if (currentMode === 'foco') {
                         if(blocksQueue[currentBlockIndex]) { 
                             blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
@@ -1100,9 +1162,7 @@
                         }
                         completedFocosCount++; renderBlocksList();
                         if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
-                    } else { 
-                        currentMode = 'foco'; loadBlock(currentBlockIndex + 1); 
-                    }
+                    } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
                     saveTimerState();
                 }
             }
@@ -1117,13 +1177,10 @@
             shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
             longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
     
-            const savedBreakShort = localStorage.getItem(getKey('BreakShort')) || '5';
-            const savedBreakLong = localStorage.getItem(getKey('BreakLong')) || '15';
-            document.getElementById('input-break-short').value = savedBreakShort;
-            document.getElementById('input-break-long').value = savedBreakLong;
-
-            const savedFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
-            const savedFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
+            document.getElementById('input-break-short').value = localStorage.getItem(getKey('BreakShort')) || '5';
+            document.getElementById('input-break-long').value = localStorage.getItem(getKey('BreakLong')) || '15';
+            document.getElementById('theme-font-text').value = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
+            document.getElementById('theme-font-timer').value = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
 
             document.getElementById('bg-url').value = savedBgUrl;
             document.getElementById('input-audio-url').value = savedAudioUrl;
@@ -1132,8 +1189,10 @@
             document.getElementById('theme-bg-opacity').value = savedBgOpacity;
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
-            document.getElementById('theme-font-text').value = savedFontText;
-            document.getElementById('theme-font-timer').value = savedFontTimer;
+
+            // NOVO: Carregar inputs da Prova nas Configurações
+            document.getElementById('input-exam-name').value = localStorage.getItem(getKey('ExamName')) || '';
+            document.getElementById('input-exam-date').value = localStorage.getItem(getKey('ExamDate')) || '';
 
             const savedBinId = localStorage.getItem(getKey('BinId')) || '';
             const savedMasterKey = localStorage.getItem(getKey('MasterKey')) || '';
@@ -1144,24 +1203,23 @@
             document.documentElement.style.setProperty('--text-color', savedTextColor);
             let hex = savedBgColor.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
             document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
-            document.documentElement.style.setProperty('--font-text', savedFontText); document.documentElement.style.setProperty('--font-timer', savedFontTimer);
+            document.documentElement.style.setProperty('--font-text', localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif");
+            document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
 
             renderBlocksList();
+            calculateNetHoursToday(); // Inicializa contador de horas líquidas
+            updateExamCountdown();   // Inicializa contador de dias da prova
             
             const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
-            if (savedState) {
-                cronoTime = savedState.cronoTime || 0;
-            }
+            if (savedState) { cronoTime = savedState.cronoTime || 0; }
 
             if (savedState && savedState.isRunning) {
                 currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex || 0; 
                 completedFocosCount = savedState.completedFocosCount || 0; totalSecondsCurrent = savedState.totalSecondsCurrent;
-
                 const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); 
                 
                 if (currentMode === 'crono') {
-                    cronoTime += elapsedSeconds;
-                    isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar';
+                    cronoTime += elapsedSeconds; isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar';
                 } else {
                     timeLeft = savedState.timeLeft - elapsedSeconds;
                     if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
@@ -1174,12 +1232,9 @@
                 } else if (currentMode === 'curta' || currentMode === 'longa') {
                     subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
                 } else if (currentMode === 'crono') {
-                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                        subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
-                    } else {
-                        subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
-                    }
-                } else { subjectDisplay.textContent = "Sem blocos"; }
+                    subjectDisplay.textContent = (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) ? blocksQueue[currentBlockIndex].subject : "Estudo Livre";
+                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
+                }
                 updateDisplay();
             } else {
                 currentMode = 'foco'; switchModeUI('foco');
