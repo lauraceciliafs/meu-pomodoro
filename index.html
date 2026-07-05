@@ -814,15 +814,20 @@
             }
 
             for (let dateStr in history) {
-                const parts = dateStr.split(', ');
-                const datePart = parts.length > 1 ? parts[1] : parts[0];
-                const [d, m, y] = datePart.split('/');
-                if (d && m && y) {
+                // PARSING BLINDADO: Extrai Dia, Mês e Ano independentemente de barras ou traços
+                const numbers = dateStr.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
+                
+                if (numbers) {
+                    const d = parseInt(numbers[1], 10);
+                    const m = parseInt(numbers[2], 10);
+                    const y = parseInt(numbers[3], 10);
+                    
                     const recordDate = new Date(y, m - 1, d);
+                    
                     if (recordDate >= startDate && recordDate <= today) {
                         for (let subj in history[dateStr]) {
                             if (!aggregatedData[subj]) {
-                                aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color };
+                                aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color || '#ff6b6b' };
                             }
                             aggregatedData[subj].minutes += history[dateStr][subj].minutes;
                             totalPeriodMinutes += history[dateStr][subj].minutes;
