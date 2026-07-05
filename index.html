@@ -56,7 +56,6 @@
         .cloud-status-indicator.syncing { opacity: 1; color: var(--accent-color); animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* Estilo do Card Regressivo da Prova */
         .exam-countdown-box {
             background: rgba(125, 125, 125, 0.06); padding: 6px 12px; border-radius: 12px;
             margin: 20px auto 4px auto; border: 1px dashed var(--border-color);
@@ -64,7 +63,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Estilo das Horas Líquidas Diárias */
         .net-hours-badge {
             font-size: 0.75rem; font-weight: 600; opacity: 0.8;
             margin-top: -12px; margin-bottom: 16px; display: block;
@@ -283,11 +281,14 @@
                 <span class="panel-title">Horas Estudadas</span>
                 <button class="close-panel" onclick="toggleStats()">✖</button>
             </div>
+            
+            <!-- TROQUEI MÊS POR "TUDO" PARA FORÇAR O GRÁFICO A EXIBIR SEMPRE -->
             <div class="modes" style="margin-bottom: 20px;">
                 <button class="mode-btn active" id="btn-stat-hoje" onclick="renderStats('hoje')">Hoje</button>
                 <button class="mode-btn" id="btn-stat-semana" onclick="renderStats('semana')">Semana</button>
-                <button class="mode-btn" id="btn-stat-mes" onclick="renderStats('mes')">Mês</button>
+                <button class="mode-btn" id="btn-stat-todos" onclick="renderStats('todos')">Tudo</button>
             </div>
+
             <div style="position: relative; height: 200px; width: 100%;">
                 <canvas id="statsChart"></canvas>
             </div>
@@ -597,7 +598,6 @@
             return m > 0 ? `${h}h ${m}min` : `${h}h`;
         }
 
-        // NOVO: Função para calcular Horas Líquidas de Hoje
         function calculateNetHoursToday() {
             const history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -621,15 +621,13 @@
             }
         }
 
-        // NOVO: Função para Calcular e Atualizar a Contagem Regressiva da Prova
         function updateExamCountdown() {
             const name = localStorage.getItem(getKey('ExamName')) || '';
             const dateStr = localStorage.getItem(getKey('ExamDate')) || '';
             const displayBox = document.getElementById('exam-countdown');
             
             if (!dateStr || !name) {
-                displayBox.style.display = 'none';
-                return;
+                displayBox.style.display = 'none'; return;
             }
             
             const examDate = new Date(dateStr + 'T00:00:00');
@@ -646,7 +644,7 @@
                 displayBox.innerHTML = `🎉 <strong>Chegou o Dia!</strong> Boa sorte no ${name}!`;
                 displayBox.style.display = 'inline-block';
             } else {
-                displayBox.style.display = 'none'; // Passou da data, esconde
+                displayBox.style.display = 'none'; 
             }
         }
 
@@ -668,7 +666,7 @@
             
             history[dateStr][subject].minutes += minsToAdd;
             localStorage.setItem(getKey('History'), JSON.stringify(history));
-            calculateNetHoursToday(); // Atualiza contador na tela principal
+            calculateNetHoursToday(); 
         }
 
         function deleteHistoryItem(dateStr, subject) {
@@ -681,7 +679,7 @@
                 localStorage.setItem(getKey('History'), JSON.stringify(history));
                 silentCloudSave();
                 renderHistory();
-                calculateNetHoursToday(); // Atualiza contador
+                calculateNetHoursToday(); 
                 if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
             }
         }
@@ -713,7 +711,7 @@
             }
             editingHistoryItem = null;
             renderHistory();
-            calculateNetHoursToday(); // Atualiza contador
+            calculateNetHoursToday(); 
             if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
         }
 
@@ -791,10 +789,11 @@
             hideTimerElements(statsPanel.classList.contains('open'));
         }
 
+        // ====== NOVO: RENDER STATS BLINDADO COM OPÇÃO "TUDO" ======
         function renderStats(period) {
             document.getElementById('btn-stat-hoje').classList.remove('active');
             document.getElementById('btn-stat-semana').classList.remove('active');
-            document.getElementById('btn-stat-mes').classList.remove('active');
+            document.getElementById('btn-stat-todos').classList.remove('active');
             document.getElementById(`btn-stat-${period}`).classList.add('active');
 
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
@@ -809,29 +808,37 @@
                 const day = startDate.getDay(); 
                 const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); 
                 startDate.setDate(diff); 
-            } else if (period === 'mes') {
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             }
 
             for (let dateStr in history) {
-                // PARSING BLINDADO: Extrai Dia, Mês e Ano independentemente de barras ou traços
-                const numbers = dateStr.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
+                let recordDate = null;
                 
+                // Extrator de Datas Blindado (Ignora se é barra ou traço)
+                const numbers = dateStr.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
                 if (numbers) {
-                    const d = parseInt(numbers[1], 10);
-                    const m = parseInt(numbers[2], 10);
-                    const y = parseInt(numbers[3], 10);
-                    
-                    const recordDate = new Date(y, m - 1, d);
-                    
+                    recordDate = new Date(parseInt(numbers[3], 10), parseInt(numbers[2], 10) - 1, parseInt(numbers[1], 10));
+                }
+
+                let isWithinPeriod = false;
+                
+                if (period === 'todos') {
+                    isWithinPeriod = true;
+                } else if (recordDate) {
                     if (recordDate >= startDate && recordDate <= today) {
-                        for (let subj in history[dateStr]) {
-                            if (!aggregatedData[subj]) {
-                                aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color || '#ff6b6b' };
-                            }
-                            aggregatedData[subj].minutes += history[dateStr][subj].minutes;
-                            totalPeriodMinutes += history[dateStr][subj].minutes;
+                        isWithinPeriod = true;
+                    }
+                } else if (dateStr.includes(now.toLocaleDateString('pt-BR'))) {
+                    // Salva-vidas se a data do browser for alienígena
+                    isWithinPeriod = true; 
+                }
+
+                if (isWithinPeriod) {
+                    for (let subj in history[dateStr]) {
+                        if (!aggregatedData[subj]) {
+                            aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color || '#ff6b6b' };
                         }
+                        aggregatedData[subj].minutes += history[dateStr][subj].minutes;
+                        totalPeriodMinutes += history[dateStr][subj].minutes;
                     }
                 }
             }
@@ -881,10 +888,7 @@
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: {
-                            legend: { 
-                                position: 'bottom', 
-                                labels: { font: { family: "'Plus Jakarta Sans', sans-serif" }, padding: 15, usePointStyle: true } 
-                            },
+                            legend: { position: 'bottom', labels: { font: { family: "'Plus Jakarta Sans', sans-serif" }, padding: 15, usePointStyle: true } },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
@@ -1195,7 +1199,6 @@
             document.getElementById('theme-short-break-color').value = shortBreakColor;
             document.getElementById('theme-long-break-color').value = longBreakColor;
 
-            // NOVO: Carregar inputs da Prova nas Configurações
             document.getElementById('input-exam-name').value = localStorage.getItem(getKey('ExamName')) || '';
             document.getElementById('input-exam-date').value = localStorage.getItem(getKey('ExamDate')) || '';
 
@@ -1212,8 +1215,8 @@
             document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
 
             renderBlocksList();
-            calculateNetHoursToday(); // Inicializa contador de horas líquidas
-            updateExamCountdown();   // Inicializa contador de dias da prova
+            calculateNetHoursToday();
+            updateExamCountdown();   
             
             const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
             if (savedState) { cronoTime = savedState.cronoTime || 0; }
