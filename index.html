@@ -92,7 +92,6 @@
         .status-text { font-family: var(--font-text); font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; transition: color 0.3s ease; }
         .timer-display { font-family: var(--font-timer); font-size: 2.5rem; font-weight: 500; margin: 0; transition: font-size 0.2s ease; }
 
-        /* NOVO: BARRA DE CRONÔMETRO GLOBAL */
         .global-timer-bar {
             background: rgba(125, 125, 125, 0.08); border: 1px dashed var(--border-color); border-radius: 12px; 
             padding: 8px 12px; margin: 10px auto 16px auto; display: flex; justify-content: space-between; 
@@ -263,7 +262,6 @@
             </div>
         </div>
 
-        <!-- NOVO: BARRA DE CRONÔMETRO GLOBAL -->
         <div class="global-timer-bar" id="global-timer-bar">
             <div class="global-timer-info">
                 <span class="global-timer-label">Estudo Global</span>
@@ -297,7 +295,6 @@
             </div>
         </div>
 
-        <!-- OVERLAYS: HISTÓRICO, STATS, SETTINGS (Iguais ao anterior) -->
         <div class="overlay-panel" id="history-panel">
             <div class="panel-header">
                 <span class="panel-title">Histórico de Estudos</span>
@@ -438,20 +435,18 @@
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // Variáveis do Timer Principal
+        // MOTOR DE CONTAGEM PURA (100% independente do relógio do sistema operacional)
         let isRunning = false;
         let timeLeft = 0;
         let cronoTime = 0;
         let totalSecondsCurrent = 0;
-        let lastTickTime = Date.now();
-        
-        // Variáveis do Timer Global (Novo)
+        let internalTimer = null;
+
         let isGlobalRunning = false;
         let globalTime = 0;
-        let globalLastTick = Date.now();
+        let globalInternalTimer = null;
         
         let blocksQueue = JSON.parse(localStorage.getItem(getKey('Queue'))) || [];
-        
         let currentMode = 'foco'; 
         let currentBlockIndex = 0;
         let completedFocosCount = 0; 
@@ -462,28 +457,6 @@
         
         let shortBreakColor = '#8ce99a';
         let longBreakColor = '#74c0fc';
-
-        const workerScript = `
-            let interval;
-            self.onmessage = function(e) {
-                if (e.data === 'start') {
-                    interval = setInterval(() => self.postMessage('tick'), 1000);
-                } else if (e.data === 'stop') {
-                    clearInterval(interval);
-                }
-            };
-        `;
-        
-        // Worker do Timer Principal
-        const timerWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
-        timerWorker.onmessage = function() { countdown(); };
-
-        function startInterval() { timerWorker.postMessage('start'); }
-        function stopInterval() { timerWorker.postMessage('stop'); }
-
-        // Worker do Timer Global (Novo)
-        const globalWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
-        globalWorker.onmessage = function() { globalCountdown(); };
 
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
@@ -629,10 +602,9 @@
 
         function saveTimerState() {
             const state = { 
-                timeLeft: timeLeft, cronoTime: cronoTime, totalSecondsCurrent: totalSecondsCurrent, 
                 currentMode: currentMode, currentBlockIndex: currentBlockIndex, completedFocosCount: completedFocosCount, 
-                isRunning: isRunning, lastTick: lastTickTime,
-                globalTime: globalTime, isGlobalRunning: isGlobalRunning, globalLastTick: globalLastTick
+                isRunning: isRunning, isGlobalRunning: isGlobalRunning,
+                timeLeft: timeLeft, cronoTime: cronoTime, globalTime: globalTime
             };
             localStorage.setItem(getKey('TimerState'), JSON.stringify(state));
         }
@@ -793,7 +765,6 @@
                     const safeSubj = subj.replace(/'/g, "\\'"); 
                     
                     if (editingHistoryItem && editingHistoryItem.date === date && editingHistoryItem.subject === subj) {
-                        
                         const nums = date.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
                         let isoDate = "";
                         if(nums) { isoDate = `${nums[3]}-${nums[2].padStart(2,'0')}-${nums[1].padStart(2,'0')}`; }
@@ -888,7 +859,6 @@
                 }
 
                 let isWithinPeriod = false;
-                
                 if (period === 'todos') {
                     isWithinPeriod = true;
                 } else if (recordDate) {
@@ -1020,7 +990,8 @@
 
         function playBlock(idx) { 
             if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
+            if (internalTimer) clearInterval(internalTimer);
+            isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
             if (currentMode === 'crono') {
                 currentBlockIndex = idx; let block = blocksQueue[currentBlockIndex]; subjectDisplay.textContent = block.subject;
                 document.documentElement.style.setProperty('--accent-color', block.color); updateDisplay(); saveTimerState(); renderBlocksList();
@@ -1042,14 +1013,18 @@
         function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
         function confirmDelete(idx) {
             blocksQueue.splice(idx, 1);
-            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause(); loadBlock(currentBlockIndex); }
+            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { 
+                if (internalTimer) clearInterval(internalTimer);
+                isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause(); loadBlock(currentBlockIndex); 
+            }
             saveQueue(); deletingBlockIndex = -1; renderBlocksList();
             if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; saveTimerState(); }
         }
         function cancelDelete() { deletingBlockIndex = -1; renderBlocksList(); }
 
         function forceMode(mode) {
-            stopInterval(); isRunning = false; startBtn.textContent = "Iniciar"; alarmAudio.pause();
+            if (internalTimer) clearInterval(internalTimer);
+            isRunning = false; startBtn.textContent = "Iniciar"; alarmAudio.pause();
             if (mode === 'foco') {
                 currentMode = 'foco'; switchModeUI('foco'); 
                 if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) { loadBlock(currentBlockIndex); } 
@@ -1108,91 +1083,75 @@
 
         function switchModeUI(mode) { document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`btn-${mode}`).classList.add('active'); }
 
-        function renderBlocksList() {
-            if (blocksQueue.length > 0) emptyMsg.style.display = "none"; else emptyMsg.style.display = "block";
-            blocksListContainer.innerHTML = "";
-            blocksQueue.forEach((block, idx) => {
-                const item = document.createElement('div'); 
-                const isActive = (idx === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono') && !block.completed);
-                item.className = `block-item ${isActive ? 'current-active' : ''}`;
-                const dotBg = block.completed ? block.color : 'rgba(125, 125, 125, 0.2)'; const dotBorder = block.completed ? 'transparent' : 'rgba(125, 125, 125, 0.15)';
-                let contentHTML = ''; const displayDuration = formatMinutesDisplay(block.duration / 60);
-
-                if (editingBlockIndex === idx) {
-                    contentHTML = `
-                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
-                        <div class="block-info-wrapper">
-                            <div class="block-text-group" style="gap: 5px; align-items: center;">
-                                <input type="text" id="edit-subj-${idx}" class="inline-input" value="${block.subject}">
-                                <div class="color-wrapper" style="width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;">
-                                    <input type="color" id="edit-color-${idx}" value="${block.color}" style="width: 32px; height: 32px;">
-                                </div>
-                                <input type="number" id="edit-time-${idx}" class="inline-input time" value="${block.duration / 60}" min="1">
-                            </div>
-                            <div class="block-actions" style="opacity: 1;">
-                                <button class="action-btn" onclick="saveEdit(${idx})">✅</button>
-                                <button class="action-btn" onclick="cancelEdit()">❌</button>
-                            </div>
-                        </div>`;
-                } else if (deletingBlockIndex === idx) {
-                    contentHTML = `<div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div><div class="block-info-wrapper"><span class="block-name" style="color: var(--accent-color); font-weight: 600;">Remover?</span><div class="block-actions" style="opacity: 1;"><button class="action-btn" onclick="confirmDelete(${idx})">✅</button><button class="action-btn" onclick="cancelDelete()">❌</button></div></div>`;
-                } else {
-                    contentHTML = `
-                        <div class="block-dot" style="background-color: ${dotBg}; border-color: ${dotBorder};"></div>
-                        <div class="block-info-wrapper">
-                            <div class="block-text-group">
-                                <span class="block-name">${block.subject}</span>
-                                <span class="block-duration">${displayDuration}</span>
-                            </div>
-                            <div class="block-actions">
-                                <button class="action-btn" onclick="playBlock(${idx})" title="Estudar matéria">▶️</button>
-                                <button class="action-btn" onclick="startEdit(${idx})" title="Editar">✏️</button>
-                                <button class="action-btn" onclick="startDelete(${idx})" title="Remover">✖</button>
-                            </div>
-                        </div>`;
-                }
-                item.innerHTML = contentHTML; blocksListContainer.appendChild(item);
-            });
-        }
-
-        function playAlarm() {
-            alarmAudio.loop = false; alarmAudio.currentTime = 0; alarmAudio.volume = 1.0;
-            let promise = alarmAudio.play();
-            if (promise !== undefined) {
-                promise.catch(erro => {
-                    subjectDisplay.textContent = "⏰ TEMPO ESGOTADO!"; document.documentElement.style.setProperty('--accent-color', '#ff6b6b');
-                });
-            }
-        }
-
-       function toggleTimer() {
+        // ==========================================
+        // MOTOR DE CONTAGEM PURA (SEM DEPENDER DO RELÓGIO DA MÁQUINA)
+        // ==========================================
+        function toggleTimer() {
             try {
                 if (currentMode === 'crono') {
-                    if (isRunning) { stopInterval(); startBtn.textContent = 'Iniciar'; } 
-                    else { lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                    if (isRunning) { 
+                        clearInterval(internalTimer); internalTimer = null; startBtn.textContent = 'Iniciar'; 
+                    } else { 
+                        startBtn.textContent = 'Pausar'; 
+                        internalTimer = setInterval(() => {
+                            cronoTime++;
+                            updateDisplay();
+                            saveTimerState();
+                        }, 1000);
+                    }
                     isRunning = !isRunning; saveTimerState(); updateDisplay(); return;
                 }
+                
                 if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
+                
                 if (!isRunning) {
                     let audioUrl = localStorage.getItem(getKey('AudioUrl'));
                     if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
                     if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
                     alarmAudio.load(); 
                 }
+                
                 if (!isRunning && timeLeft <= 0) {
                     if (currentMode === 'foco') { loadBlock(currentBlockIndex); } else { startPausa(currentMode); }
                     if (timeLeft <= 0) return; 
                 }
+                
                 if (isRunning) { 
-                    stopInterval(); startBtn.textContent = 'Iniciar'; alarmAudio.pause();
+                    clearInterval(internalTimer); internalTimer = null; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
                     if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; saveQueue(); }
-                } else { lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                } else { 
+                    startBtn.textContent = 'Pausar'; 
+                    internalTimer = setInterval(() => {
+                        if (timeLeft > 0) {
+                            timeLeft--;
+                            if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { 
+                                blocksQueue[currentBlockIndex].remainingTime = timeLeft; 
+                            }
+                            updateDisplay();
+                            saveTimerState();
+                        } else {
+                            clearInterval(internalTimer); internalTimer = null;
+                            isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
+                            if (currentMode === 'foco') {
+                                if(blocksQueue[currentBlockIndex]) { 
+                                    blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
+                                    saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); 
+                                }
+                                completedFocosCount++; renderBlocksList();
+                                if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
+                            } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
+                            saveTimerState();
+                        }
+                    }, 1000);
+                }
+                
                 isRunning = !isRunning; saveTimerState(); updateDisplay(); 
             } catch (erro) { console.error(erro); }
         }
 
         function resetTimer() {
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
+            if (internalTimer) clearInterval(internalTimer); internalTimer = null;
+            isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
             if (currentMode === 'crono') {
                 if (cronoTime >= 5) {
                     let subj = "Estudo Livre"; let col = "#b197fc";
@@ -1207,7 +1166,7 @@
                                 subjectDisplay.textContent = (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) ? blocksQueue[currentBlockIndex].subject : "Estudo Livre";
                             }
                         }, 3000);
-                    } catch(e) { console.error(e); }
+                    } catch(e) {}
                 }
                 cronoTime = 0; updateDisplay(); saveTimerState(); return;
             }
@@ -1219,46 +1178,20 @@
             updateDisplay(); saveTimerState();
         }
 
-        function countdown() {
-            const now = Date.now(); const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
-            if (deltaSeconds > 0) {
-                lastTickTime = now; 
-                if (currentMode === 'crono') { cronoTime += deltaSeconds; updateDisplay(); saveTimerState(); return; }
-
-                timeLeft -= deltaSeconds;
-                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; }
-
-                if (timeLeft > 0) { updateDisplay(); saveTimerState(); } 
-                else {
-                    timeLeft = 0; updateDisplay(); stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
-                    if (currentMode === 'foco') {
-                        if(blocksQueue[currentBlockIndex]) { 
-                            blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
-                            saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); 
-                        }
-                        completedFocosCount++; renderBlocksList();
-                        if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
-                    } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
-                    saveTimerState();
-                }
-            }
-        }
-
-        // ================= NOVO: FUNÇÕES DO CRONÔMETRO GLOBAL =================
         function toggleGlobalTimer() {
             const btn = document.getElementById('global-play-btn');
             if (isGlobalRunning) {
-                globalWorker.postMessage('stop');
-                btn.textContent = '▶';
-                btn.classList.remove('play');
+                clearInterval(globalInternalTimer); globalInternalTimer = null;
+                btn.textContent = '▶'; btn.classList.remove('play');
             } else {
-                globalWorker.postMessage('start');
-                globalLastTick = Date.now();
-                btn.textContent = '⏸';
-                btn.classList.add('play');
+                btn.textContent = '⏸'; btn.classList.add('play');
+                globalInternalTimer = setInterval(() => {
+                    globalTime++;
+                    updateGlobalDisplay();
+                    saveTimerState();
+                }, 1000);
             }
-            isGlobalRunning = !isGlobalRunning;
-            saveTimerState();
+            isGlobalRunning = !isGlobalRunning; saveTimerState();
         }
 
         function resetGlobalTimer() {
@@ -1267,23 +1200,10 @@
                 try {
                     saveToHistory("Estudo Global", "#3b82f6", globalTime);
                     const btn = document.getElementById('global-reset-btn');
-                    btn.textContent = "✅";
-                    setTimeout(() => btn.textContent = "↻", 2000);
+                    btn.textContent = "✅"; setTimeout(() => btn.textContent = "↻", 2000);
                 } catch(e) {}
             }
-            globalTime = 0;
-            updateGlobalDisplay();
-            saveTimerState();
-        }
-
-        function globalCountdown() {
-            const now = Date.now(); const deltaSeconds = Math.floor((now - globalLastTick) / 1000);
-            if (deltaSeconds > 0) {
-                globalLastTick = now;
-                globalTime += deltaSeconds;
-                updateGlobalDisplay();
-                saveTimerState();
-            }
+            globalTime = 0; updateGlobalDisplay(); saveTimerState();
         }
 
         function updateGlobalDisplay() {
@@ -1292,7 +1212,6 @@
             const s = (globalTime % 60).toString().padStart(2, '0');
             document.getElementById('global-timer-display').textContent = `${h}:${m}:${s}`;
         }
-        // =======================================================================
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedBgUrl = localStorage.getItem(getKey('BgUrl')) || '';
@@ -1337,35 +1256,55 @@
             
             const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
             if (savedState) { 
+                currentMode = savedState.currentMode || 'foco';
+                currentBlockIndex = savedState.currentBlockIndex || 0;
+                completedFocosCount = savedState.completedFocosCount || 0;
+
                 cronoTime = savedState.cronoTime || 0; 
+                timeLeft = savedState.timeLeft || 0;
                 globalTime = savedState.globalTime || 0;
-            }
 
-            // RECUPERA O TIMER GLOBAL (NOVO)
-            if (savedState && savedState.isGlobalRunning) {
-                const elapsedGlobal = Math.floor((Date.now() - savedState.globalLastTick) / 1000);
-                globalTime += elapsedGlobal;
-                isGlobalRunning = true;
-                globalLastTick = Date.now();
-                globalWorker.postMessage('start');
-                const btn = document.getElementById('global-play-btn');
-                btn.textContent = '⏸';
-                btn.classList.add('play');
-            }
-            updateGlobalDisplay();
+                if (savedState.isGlobalRunning) {
+                    isGlobalRunning = true;
+                    const btn = document.getElementById('global-play-btn');
+                    btn.textContent = '⏸'; btn.classList.add('play');
+                    globalInternalTimer = setInterval(() => {
+                        globalTime++;
+                        updateGlobalDisplay();
+                        saveTimerState();
+                    }, 1000);
+                }
+                updateGlobalDisplay();
 
-            // RECUPERA O TIMER PRINCIPAL
-            if (savedState && savedState.isRunning) {
-                currentMode = savedState.currentMode; currentBlockIndex = savedState.currentBlockIndex || 0; 
-                completedFocosCount = savedState.completedFocosCount || 0; totalSecondsCurrent = savedState.totalSecondsCurrent;
-                const elapsedSeconds = Math.floor((Date.now() - savedState.lastTick) / 1000); 
-                
-                if (currentMode === 'crono') {
-                    cronoTime += elapsedSeconds; isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar';
-                } else {
-                    timeLeft = savedState.timeLeft - elapsedSeconds;
-                    if (timeLeft <= 0) { timeLeft = 0; isRunning = false; } 
-                    else { isRunning = true; lastTickTime = Date.now(); startInterval(); startBtn.textContent = 'Pausar'; }
+                if (savedState.isRunning) {
+                    isRunning = true;
+                    startBtn.textContent = 'Pausar';
+                    internalTimer = setInterval(() => {
+                        if (currentMode === 'crono') {
+                            cronoTime++;
+                            updateDisplay();
+                            saveTimerState();
+                        } else if (timeLeft > 0) {
+                            timeLeft--;
+                            if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { 
+                                blocksQueue[currentBlockIndex].remainingTime = timeLeft; 
+                            }
+                            updateDisplay();
+                            saveTimerState();
+                        } else {
+                            clearInterval(internalTimer); internalTimer = null;
+                            isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
+                            if (currentMode === 'foco') {
+                                if(blocksQueue[currentBlockIndex]) { 
+                                    blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
+                                    saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); 
+                                }
+                                completedFocosCount++; renderBlocksList();
+                                if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
+                            } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
+                            saveTimerState();
+                        }
+                    }, 1000);
                 }
                 
                 switchModeUI(currentMode);
