@@ -1222,10 +1222,7 @@
         function countdown() {
             const now = Date.now(); const deltaSeconds = Math.floor((now - lastTickTime) / 1000);
             if (deltaSeconds > 0) {
-                // CORREÇÃO MÁGICA: Em vez de igualar ao "now" (que joga o lixo fora), 
-                // nós somamos apenas os segundos exatos. Os milissegundos ficam guardados!
-                lastTickTime += deltaSeconds * 1000; 
-                
+                lastTickTime = now; 
                 if (currentMode === 'crono') { cronoTime += deltaSeconds; updateDisplay(); saveTimerState(); return; }
 
                 timeLeft -= deltaSeconds;
@@ -1244,18 +1241,6 @@
                     } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
                     saveTimerState();
                 }
-            }
-        }
-
-        // ====== NOVO: CRONÔMETRO GLOBAL SEM SANGRAMENTO ======
-        function globalCountdown() {
-            const now = Date.now(); const deltaSeconds = Math.floor((now - globalLastTick) / 1000);
-            if (deltaSeconds > 0) {
-                // Mantém os milissegundos para não perder tempo no celular
-                globalLastTick += deltaSeconds * 1000;
-                globalTime += deltaSeconds;
-                updateGlobalDisplay();
-                saveTimerState();
             }
         }
 
