@@ -3,662 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aesthetic Pomodoro - Pro Setup & History</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Aesthetic Chronometer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Cinzel:wght@500;600&family=Comfortaa:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Courier+Prime&family=Fira+Code:wght@400;500&family=Fredoka:wght@400;500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Merriweather:ital,wght@0,400;0,700&family=Montserrat:wght@400;500;600&family=Nunito:wght@400;500;600&family=Outfit:wght@400;500;600&family=Patrick+Hand&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Quicksand:wght@400;500;600&family=Roboto:wght@400;500&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --font-text: 'Plus Jakarta Sans', sans-serif;
-            --font-timer: 'Playfair Display', serif;
-            --text-color: #37352f;
-            --bg-card: rgba(255, 255, 255, 0.85);
-            --border-color: rgba(125, 125, 125, 0.2);
-            --accent-color: #ff6b6b;
+            --bg-glass: rgba(255, 255, 255, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.4);
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --accent: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.3);
+            --danger: #ff6b6b;
+            --success: #10b981;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --text-color: #e3e3e3;
-                --bg-card: rgba(25, 25, 25, 0.85);
+                --bg-glass: rgba(26, 32, 44, 0.75);
+                --border-glass: rgba(255, 255, 255, 0.08);
+                --text-main: #f7fafc;
+                --text-muted: #a0aec0;
+                --accent: #818cf8;
+                --accent-glow: rgba(129, 140, 248, 0.25);
             }
         }
 
         body {
-            margin: 0; padding: 10px; font-family: var(--font-text); color: var(--text-color);
-            display: flex; justify-content: center; align-items: center; min-height: 100vh;
-            box-sizing: border-box; background-size: cover; background-position: center;
-            background-color: transparent; transition: background 0.5s ease;
+            margin: 0; padding: 20px; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; background: var(--bg-glass);
+            background-color: #1a202c;
+            box-sizing: border-box;
         }
 
-        .pomodoro-card {
-            background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color); border-radius: 20px; padding: 24px;
-            width: 100%; max-width: 350px; text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            position: relative; transition: all 0.3s ease; overflow: hidden; 
+        .crono-widget {
+            background: var(--bg-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-glass);
+            border-radius: 36px;
+            padding: 45px 35px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.3);
+            position: relative;
+            overflow: hidden;
         }
 
-        .top-btn {
-            position: absolute; top: 16px; background: none; border: none; font-size: 1.1rem;
-            cursor: pointer; opacity: 0.5; transition: opacity 0.2s, transform 0.3s; color: var(--text-color); z-index: 10;
+        .crono-widget::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
+            opacity: 0; transition: opacity 0.6s ease; z-index: 0; pointer-events: none;
         }
-        .top-btn:hover { opacity: 1; transform: scale(1.1); }
-        .settings-toggle { right: 16px; } .settings-toggle:hover { transform: rotate(45deg); }
-        .history-toggle { left: 16px; }
-        .stats-toggle { left: 48px; }
+        .crono-widget.running::before { opacity: 1; animation: pulse 4s infinite alternate; }
 
-        .cloud-status-indicator {
-            position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem;
-            opacity: 0.5; display: flex; align-items: center; gap: 4px; transition: opacity 0.3s, color 0.3s; z-index: 10;
-        }
-        .cloud-status-indicator.syncing { opacity: 1; color: var(--accent-color); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        @keyframes pulse { 0% { transform: scale(0.95); } 100% { transform: scale(1.05); } }
 
+        /* Estilo da Contagem Regressiva Restaurado */
         .exam-countdown-box {
-            background: rgba(125, 125, 125, 0.06); padding: 6px 12px; border-radius: 12px;
-            margin: 20px auto 4px auto; border: 1px dashed var(--border-color);
-            display: inline-block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.2px;
+            background: rgba(125, 125, 125, 0.08);
+            padding: 8px 16px;
+            border-radius: 12px;
+            margin: 0 auto 25px auto;
+            border: 1px dashed var(--border-glass);
+            display: inline-block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+            letter-spacing: 0.2px;
             transition: all 0.3s ease;
         }
+        .exam-countdown-box strong { color: var(--accent); }
 
-        .net-hours-badge {
-            font-size: 0.75rem; font-weight: 600; opacity: 0.8;
-            margin-top: -8px; margin-bottom: 16px; display: block;
-            letter-spacing: 0.3px;
+        .input-group {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-bottom: 25px;
         }
 
-        .modes { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .mode-btn {
-            background: none; border: none; color: var(--text-color); opacity: 0.4;
-            padding: 4px 6px; font-size: 0.75rem; font-family: var(--font-text);
-            letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease;
+        .subject-input {
+            background: rgba(125,125,125,0.08);
+            border: 1px solid rgba(125,125,125,0.2);
+            color: var(--text-main);
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            width: 180px;
+            outline: none;
+            text-align: center;
+            transition: all 0.3s;
         }
-        .mode-btn.active { opacity: 1; font-weight: 500; border-bottom: 1px solid var(--text-color); }
+        .subject-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); width: 210px; }
 
-        .timer-container {
-            position: relative; width: 160px; height: 160px; margin: 10px auto 14px auto;
+        .color-picker-wrapper {
+            width: 42px; height: 42px; border-radius: 14px; overflow: hidden;
+            border: 1px solid rgba(125,125,125,0.2); cursor: pointer; flex-shrink: 0;
+        }
+        .color-picker-wrapper input {
+            width: 60px; height: 60px; border: none; padding: 0; margin: -10px; cursor: pointer; background: transparent;
+        }
+
+        .display-wrapper { position: relative; z-index: 1; margin: 20px 0 45px 0; }
+        
+        .time-display {
+            font-family: 'Playfair Display', serif;
+            font-size: 4.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+            transition: color 0.3s ease;
+        }
+        
+        .crono-widget.running .time-display { color: var(--accent); }
+
+        .controls {
+            position: relative; z-index: 1;
+            display: flex; justify-content: center; align-items: center; gap: 14px;
+        }
+
+        .btn {
+            background: var(--text-main);
+            color: var(--bg-glass);
+            border: none;
+            border-radius: 24px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex; justify-content: center; align-items: center;
         }
-        .timer-svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); width: 100%; height: 100%; }
-        .bg-circle { fill: none; stroke: rgba(125, 125, 125, 0.15); stroke-width: 3.5; }
-        .progress-circle {
-            fill: none; stroke: var(--accent-color); stroke-width: 3.5; stroke-linecap: round;
-            transition: stroke-dashoffset 0.2s linear, stroke 0.3s ease;
-        }
 
-        .timer-text-box { display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2; width: 80%; }
-        .status-text { font-family: var(--font-text); font-size: 0.8rem; opacity: 0.7; margin-bottom: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; transition: color 0.3s ease; }
-        .timer-display { font-family: var(--font-timer); font-size: 2.5rem; font-weight: 500; margin: 0; transition: font-size 0.2s ease; }
+        .btn-play { padding: 16px 36px; flex-grow: 1; font-size: 1.1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .btn-play:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.2); }
+        .btn-play:active { transform: translateY(1px); }
 
-        .global-timer-bar {
-            background: rgba(125, 125, 125, 0.08); border: 1px dashed var(--border-color); border-radius: 12px; 
-            padding: 8px 12px; margin: 10px auto 16px auto; display: flex; justify-content: space-between; 
-            align-items: center; max-width: 250px; transition: all 0.2s ease;
+        .btn-reset {
+            width: 54px; height: 54px; border-radius: 18px;
+            background: transparent; border: 2px solid rgba(125,125,125,0.25);
+            color: var(--text-muted); font-size: 1.4rem;
         }
-        .global-timer-info { display: flex; flex-direction: column; text-align: left; }
-        .global-timer-label { font-size: 0.65rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
-        .global-timer-digits { font-family: var(--font-timer); font-size: 1.3rem; font-weight: 600; }
-        .global-timer-actions { display: flex; gap: 6px; }
-        .global-btn {
-            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            border-radius: 8px; width: 28px; height: 28px; cursor: pointer; display: flex; 
-            justify-content: center; align-items: center; font-size: 0.8rem; transition: all 0.2s;
-        }
-        .global-btn.play { background: var(--text-color); color: var(--bg-card); }
-        .global-btn:hover { transform: scale(1.1); }
+        .btn-reset:hover { border-color: var(--text-main); color: var(--text-main); transform: rotate(15deg); }
 
-        .controls { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .main-btn {
-            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            padding: 8px 24px; font-size: 0.8rem; font-family: var(--font-text); letter-spacing: 0.5px;
-            border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
+        .sync-dot {
+            position: absolute; top: 20px; right: 20px; width: 8px; height: 8px;
+            border-radius: 50%; background: var(--text-muted); opacity: 0.3; transition: all 0.3s;
         }
-        .reset-btn {
-            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            width: 33px; height: 33px; font-size: 1rem; border-radius: 50%; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; transition: all 0.2s ease; padding: 0;
-        }
-        .main-btn:hover, .reset-btn:hover { background: var(--text-color); color: var(--bg-card, #fff); }
-
-        .planner-section { border-top: 1px solid var(--border-color); padding-top: 16px; text-align: left; }
-        .planner-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-        .planner-input {
-            background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
-            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text);
-            outline: none; box-sizing: border-box; transition: border-color 0.2s;
-        }
-        .planner-input:focus { border-color: var(--text-color); }
-        
-        #input-subject { flex-grow: 1; min-width: 0; }
-        #input-time { width: 55px; text-align: center; }
-        
-        .color-wrapper {
-            width: 31px; height: 31px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);
-            cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; transition: transform 0.2s;
-        }
-        .color-wrapper:hover { transform: scale(1.05); }
-        .color-wrapper input[type="color"] { border: none; width: 40px; height: 40px; cursor: pointer; padding: 0; background: none; }
-        
-        .add-btn {
-            background: var(--text-color); color: var(--bg-card, #fff); border: none;
-            width: 31px; height: 31px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;
-            display: flex; justify-content: center; align-items: center; transition: opacity 0.2s; flex-shrink: 0;
-        }
-        @media (prefers-color-scheme: dark) { .add-btn { background: #e3e3e3; color: #191919; } }
-        .add-btn:hover { opacity: 0.8; }
-
-        .blocks-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; padding-right: 4px; }
-        .blocks-list::-webkit-scrollbar { width: 4px; }
-        .blocks-list::-webkit-scrollbar-thumb { background: rgba(125, 125, 125, 0.3); border-radius: 4px; }
-
-        .block-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; padding: 6px; border-radius: 8px; transition: background 0.2s; }
-        .block-item.current-active { background: rgba(125, 125, 125, 0.08); font-weight: 500; }
-        .block-dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(125, 125, 125, 0.2); border: 1px solid rgba(125, 125, 125, 0.15); flex-shrink: 0; transition: all 0.3s ease; }
-        
-        .block-info-wrapper { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .block-text-group { display: flex; align-items: center; gap: 8px; overflow: hidden; }
-        .block-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-        .block-duration { font-size: 0.7rem; opacity: 0.6; white-space: nowrap; }
-        
-        .block-actions { display: flex; gap: 6px; opacity: 0.2; transition: opacity 0.2s; }
-        .block-item:hover .block-actions { opacity: 1; }
-        .action-btn { background: none; border: none; font-size: 0.8rem; cursor: pointer; padding: 0; transition: transform 0.2s; filter: grayscale(100%); }
-        .action-btn:hover { transform: scale(1.15); filter: none; }
-
-        .inline-input {
-            background: transparent; border: 1px solid var(--text-color); color: var(--text-color);
-            border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; font-family: var(--font-text);
-            width: 90px; outline: none; box-sizing: border-box;
-        }
-        .inline-input.time { width: 40px; text-align: center; }
-        .empty-msg { font-size: 0.75rem; opacity: 0.5; text-align: center; font-style: italic; margin: 5px 0; }
-
-        .overlay-panel {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-card); backdrop-filter: blur(15px); border-radius: 20px;
-            padding: 24px; box-sizing: border-box; text-align: left; z-index: 20; overflow-y: auto;
-        }
-        .overlay-panel.open { display: block; }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .panel-title { font-size: 1rem; font-family: var(--font-text); font-weight: 600; }
-        .close-panel { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); opacity: 0.6; }
-
-        .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
-        .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
-        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; position: relative; }
-        .history-item-subject { display: flex; align-items: center; gap: 6px; }
-        .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        
-        .history-item-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
-        .history-item:hover .history-item-actions { opacity: 1; }
-        .history-action-btn {
-            background: none; border: none; color: var(--text-color);
-            cursor: pointer; font-size: 0.8rem; transition: transform 0.2s; 
-            padding: 0 2px; filter: grayscale(100%); opacity: 0.7;
-        }
-        .history-action-btn:hover { transform: scale(1.2); filter: none; opacity: 1; }
-        
-        .clear-history-btn {
-            width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);
-            padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-top: 10px; transition: all 0.2s;
-        }
-        .clear-history-btn:hover { background: var(--accent-color); color: #fff; }
-        
-        .clear-confirm-box {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255, 107, 107, 0.08); border: 1px dashed var(--accent-color);
-            border-radius: 8px; padding: 8px 12px; margin-top: 10px;
-        }
-        .clear-confirm-text { font-size: 0.75rem; font-weight: 600; color: var(--accent-color); }
-        .clear-confirm-actions { display: flex; gap: 10px; }
-        .clear-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; padding: 0; font-size: 0.9rem; }
-        .clear-btn:hover { transform: scale(1.15); }
-
-        .setting-group { margin-bottom: 16px; }
-        .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
-        .setting-input {
-            width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color);
-            border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text); box-sizing: border-box; outline: none;
-        }
-        .setting-input option { background: var(--bg-card); color: var(--text-color); }
-        .flex-row { display: flex; gap: 10px; }
-        .flex-row > div { flex: 1; }
-        
-        .color-setting { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .color-setting input[type="color"] { border: none; width: 30px; height: 30px; cursor: pointer; padding: 0; background: none; border-radius: 6px; }
-        .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
-        .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
+        .sync-dot.syncing { background: var(--accent); opacity: 1; animation: blink 1s infinite; }
+        .sync-dot.success { background: var(--success); opacity: 1; }
+        @keyframes blink { 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div class="pomodoro-card">
-        <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
-        <button class="top-btn stats-toggle" onclick="toggleStats()" title="Gráficos de Estudo">📈</button>
-        
-        <div class="cloud-status-indicator" id="cloud-indicator" title="Status da Sincronização">☁️ <span id="cloud-text">Local</span></div>
-        
-        <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
+    <div class="crono-widget" id="widget">
+        <div class="sync-dot" id="sync-dot" title="Status da Nuvem"></div>
 
+        <!-- CONTAGEM DA PROVA RESTAURADA -->
         <div id="exam-countdown" class="exam-countdown-box" style="display: none;"></div>
 
-        <div class="modes">
-            <button class="mode-btn active" id="btn-foco" onclick="forceMode('foco')">Foco</button>
-            <button class="mode-btn" id="btn-crono" onclick="forceMode('crono')">Crono</button>
-            <button class="mode-btn" id="btn-curta" onclick="forceMode('curta')">P. Curta</button>
-            <button class="mode-btn" id="btn-longa" onclick="forceMode('longa')">P. Longa</button>
-        </div>
-
-        <div class="timer-container" id="main-timer-container">
-            <svg class="timer-svg" viewBox="0 0 100 100">
-                <circle class="bg-circle" cx="50" cy="50" r="45"></circle>
-                <circle class="progress-circle" id="progress-bar" cx="50" cy="50" r="45"></circle>
-            </svg>
-            <div class="timer-text-box">
-                <span class="status-text" id="current-subject-display">Sem blocos</span>
-                <h1 class="timer-display" id="timer-display">00:00</h1>
+        <div class="input-group">
+            <input type="text" id="subj-input" class="subject-input" placeholder="Matéria..." value="Conhecimentos Bancários">
+            <div class="color-picker-wrapper">
+                <input type="color" id="color-input" value="#4f46e5" onchange="updateThemeColor(this.value)">
             </div>
         </div>
 
-        <div class="global-timer-bar" id="global-timer-bar">
-            <div class="global-timer-info">
-                <span class="global-timer-label">Estudo Global</span>
-                <span class="global-timer-digits" id="global-timer-display">00:00:00</span>
-            </div>
-            <div class="global-timer-actions">
-                <button class="global-btn play" id="global-play-btn" onclick="toggleGlobalTimer()" title="Iniciar Global">▶</button>
-                <button class="global-btn" id="global-reset-btn" onclick="resetGlobalTimer()" title="Salvar e Zerar">↻</button>
-            </div>
+        <div class="display-wrapper">
+            <h1 class="time-display" id="display">00:00:00</h1>
         </div>
 
-        <span id="net-hours-today" class="net-hours-badge">0m líquidas hoje</span>
-
-        <div class="controls" id="main-controls">
-            <button class="main-btn" id="start-btn" onclick="toggleTimer()">Iniciar</button>
-            <button class="reset-btn" onclick="resetTimer()" title="Reiniciar">↻</button>
-        </div>
-
-        <div class="planner-section">
-            <div class="planner-row">
-                <input type="text" id="input-subject" class="planner-input" placeholder="Nova matéria...">
-                <div class="color-wrapper" id="color-preview" style="background-color: #ff6b6b;" title="Cor do bloco">
-                    <input type="color" id="input-color" value="#ff6b6b" onchange="updatePreviewColor(this.value)">
-                </div>
-                <input type="number" id="input-time" class="planner-input" value="25" min="1" title="Minutos">
-                <button class="add-btn" onclick="addNewBlock()" title="Adicionar Bloco">+</button>
-            </div>
-            
-            <div class="blocks-list" id="blocks-list">
-                <div class="empty-msg" id="empty-msg">Seu cronograma de estudos aparecerá aqui.</div>
-            </div>
-        </div>
-
-        <div class="overlay-panel" id="history-panel">
-            <div class="panel-header">
-                <span class="panel-title">Histórico de Estudos</span>
-                <button class="close-panel" onclick="toggleHistory()">✖</button>
-            </div>
-            <div id="history-content"></div>
-            <div id="clear-history-wrapper"></div>
-        </div>
-
-        <div class="overlay-panel" id="stats-panel">
-            <div class="panel-header">
-                <span class="panel-title">Horas Estudadas</span>
-                <button class="close-panel" onclick="toggleStats()">✖</button>
-            </div>
-            
-            <div class="modes" style="margin-bottom: 20px;">
-                <button class="mode-btn active" id="btn-stat-hoje" onclick="renderStats('hoje')">Hoje</button>
-                <button class="mode-btn" id="btn-stat-semana" onclick="renderStats('semana')">Semana</button>
-                <button class="mode-btn" id="btn-stat-todos" onclick="renderStats('todos')">Tudo</button>
-            </div>
-
-            <div style="position: relative; height: 200px; width: 100%;">
-                <canvas id="statsChart"></canvas>
-            </div>
-            <div id="stats-empty" class="empty-msg" style="display: none; margin-top: 30px;">Não há horas de estudo registradas neste período. Comece um foco!</div>
-        </div>
-
-        <div class="overlay-panel" id="settings-panel">
-            <div class="panel-header">
-                <span class="panel-title">Configurações Gerais</span>
-                <button class="close-panel" onclick="toggleSettings()">✖</button>
-            </div>
-
-            <div class="setting-group flex-row" style="background: rgba(125,125,125,0.05); padding: 10px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed var(--border-color);">
-                <div>
-                    <span class="setting-label">📅 Nome da Prova / Edital</span>
-                    <input type="text" id="input-exam-name" class="setting-input" placeholder="Ex: Banco do Brasil, ENEM" onchange="saveExamSettings()">
-                </div>
-                <div>
-                    <span class="setting-label">📆 Data do Exame</span>
-                    <input type="date" id="input-exam-date" class="setting-input" onchange="saveExamSettings()">
-                </div>
-            </div>
-
-            <div class="setting-group flex-row">
-                <div>
-                    <span class="setting-label">Pausa Curta (min)</span>
-                    <input type="number" id="input-break-short" class="setting-input" value="5" min="1" onchange="updateLivePause('curta')">
-                </div>
-                <div>
-                    <span class="setting-label">Pausa Longa (min)</span>
-                    <input type="number" id="input-break-long" class="setting-input" value="15" min="1" onchange="updateLivePause('longa')">
-                </div>
-            </div>
-            
-            <div class="setting-group flex-row">
-                <div>
-                    <span class="setting-label">🔤 Fonte do Texto</span>
-                    <select id="theme-font-text" class="setting-input" onchange="updateFontText(this.value)">
-                        <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta (Padrão)</option>
-                        <option value="'Inter', sans-serif">Inter (Clean)</option>
-                        <option value="'Poppins', sans-serif">Poppins (Moderna)</option>
-                        <option value="'Montserrat', sans-serif">Montserrat</option>
-                        <option value="'Outfit', sans-serif">Outfit (Métrica)</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Quicksand', sans-serif">Quicksand (Suave)</option>
-                        <option value="'Comfortaa', cursive">Comfortaa (Cute)</option>
-                        <option value="'Fredoka', sans-serif">Fredoka (Bold Arredondada)</option>
-                        <option value="'Patrick Hand', cursive">Patrick Hand (Manual)</option>
-                        <option value="'Space Mono', monospace">Space Mono (Retro)</option>
-                        <option value="'JetBrains Mono', monospace">JetBrains Mono (Dev)</option>
-                    </select>
-                </div>
-                <div>
-                    <span class="setting-label">🔢 Fonte das Horas</span>
-                    <select id="theme-font-timer" class="setting-input" onchange="updateFontTimer(this.value)">
-                        <option value="'Playfair Display', serif">Playfair (Padrão)</option>
-                        <option value="'Lora', serif">Lora (Elegante)</option>
-                        <option value="'Merriweather', serif">Merriweather (Forte)</option>
-                        <option value="'Cormorant Garamond', serif">Cormorant (Fina)</option>
-                        <option value="'Cinzel', serif">Cinzel (Romana)</option>
-                        <option value="'Outfit', sans-serif">Outfit (Relógio Moderno)</option>
-                        <option value="'Poppins', sans-serif">Poppins (Nívea)</option>
-                        <option value="'Space Mono', monospace">Space Mono (Terminal)</option>
-                        <option value="'Fira Code', monospace">Fira Code (Code Display)</option>
-                        <option value="'Courier Prime', monospace">Courier (Máquina Antiga)</option>
-                        <option value="'Amatic SC', cursive">Amatic SC (Esticada Tall)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="setting-group">
-                <span class="setting-label">🎵 Som de Alarme (URL)</span>
-                <input type="text" id="input-audio-url" class="setting-input" placeholder="Cole o link do áudio aqui..." onchange="updateAudioUrl(this.value)">
-            </div>
-            <div class="setting-group">
-                <span class="setting-label">🖼️ Imagem de Fundo (URL)</span>
-                <input type="text" id="bg-url" class="setting-input" placeholder="Cole o link da imagem aqui..." onchange="updateBackground(this.value)">
-            </div>
-            
-            <div class="setting-group">
-                <span class="setting-label">🎨 Cores e Estilo do Card</span>
-                <div class="color-setting">
-                    <input type="color" id="theme-text-color" value="#37352f" onchange="updateThemeText(this.value)">
-                    <span>Cor do Texto e Botões</span>
-                </div>
-                <div class="color-setting">
-                    <input type="color" id="theme-bg-color" value="#ffffff" onchange="updateThemeBg()">
-                    <span>Cor do Fundo do Card</span>
-                </div>
-                <div class="color-setting">
-                    <input type="color" id="theme-short-break-color" value="#8ce99a" onchange="updateShortBreakColor(this.value)">
-                    <span>Cor da Pausa Curta</span>
-                </div>
-                <div class="color-setting">
-                    <input type="color" id="theme-long-break-color" value="#74c0fc" onchange="updateLongBreakColor(this.value)">
-                    <span>Cor da Pausa Longa</span>
-                </div>
-                
-                <div class="color-setting" style="margin-top: 10px;">
-                    <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.85" onchange="updateThemeBg()" oninput="updateThemeBg()">
-                    <span>Transparência do Fundo</span>
-                </div>
-            </div>
-
-            <div class="setting-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
-                <span class="setting-label" style="color: var(--accent-color);">☁️ Nuvem Assíncrona</span>
-                <input type="text" id="input-bin-id" class="setting-input" style="margin-bottom: 8px;" placeholder="Seu Bin ID (ex: 65a1b...)" onchange="updateCloudCredentials()">
-                <input type="password" id="input-master-key" class="setting-input" placeholder="Sua Master Key" onchange="updateCloudCredentials()">
-                <div class="empty-msg" style="margin-top: 10px; font-size: 0.7rem;">O salvamento ocorre automaticamente a cada alteração.</div>
-            </div>
-
+        <div class="controls">
+            <button class="btn btn-play" id="btn-play" onclick="toggleTimer()">Iniciar</button>
+            <button class="btn btn-reset" onclick="resetTimer()" title="Salvar e Zerar">↻</button>
         </div>
     </div>
-    
+
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // MÉTODOS DE ÂNCORA ABSOLUTA (A CURA DO MODO SLEEP)
-        let targetEndTime = 0;
-        let timerStartTime = 0;
-        let globalStartTime = 0;
+        const display = document.getElementById('display');
+        const btnPlay = document.getElementById('btn-play');
+        const widget = document.getElementById('widget');
+        const subjInput = document.getElementById('subj-input');
+        const colorInput = document.getElementById('color-input');
+        const syncDot = document.getElementById('sync-dot');
 
         let isRunning = false;
-        let timeLeft = 0;
-        let cronoTime = 0;
-        let totalSecondsCurrent = 0;
-        
-        let isGlobalRunning = false;
-        let globalTime = 0;
-        
-        let blocksQueue = JSON.parse(localStorage.getItem(getKey('Queue'))) || [];
-        let currentMode = 'foco'; 
-        let currentBlockIndex = 0;
-        let completedFocosCount = 0; 
-        
-        let editingBlockIndex = -1;
-        let deletingBlockIndex = -1;
-        let editingHistoryItem = null; 
-        
-        let shortBreakColor = '#8ce99a';
-        let longBreakColor = '#74c0fc';
+        let timeCurrent = 0;
+        let startTimeAbsolute = 0;
+        let internalTimer = null;
 
-        const workerScript = `
-            let interval;
-            self.onmessage = function(e) {
-                if (e.data === 'start') {
-                    interval = setInterval(() => self.postMessage('tick'), 1000);
-                } else if (e.data === 'stop') {
-                    clearInterval(interval);
-                }
-            };
-        `;
-        
-        const timerWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
-        timerWorker.onmessage = function() { countdown(); };
-
-        const globalWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
-        globalWorker.onmessage = function() { globalCountdown(); };
-
-        function startInterval() { timerWorker.postMessage('start'); }
-        function stopInterval() { timerWorker.postMessage('stop'); }
-
-        const display = document.getElementById('timer-display');
-        const startBtn = document.getElementById('start-btn');
-        const subjectDisplay = document.getElementById('current-subject-display');
-        const progressBar = document.getElementById('progress-bar');
-        
-        const settingsPanel = document.getElementById('settings-panel');
-        const historyPanel = document.getElementById('history-panel');
-        const historyContent = document.getElementById('history-content');
-        const statsPanel = document.getElementById('stats-panel');
-        let myChart = null; 
-        
-        const blocksListContainer = document.getElementById('blocks-list');
-        const emptyMsg = document.getElementById('empty-msg');
-        
-        const inputSubject = document.getElementById('input-subject');
-        const inputColor = document.getElementById('input-color');
-        const inputTime = document.getElementById('input-time');
-        const colorPreview = document.getElementById('color-preview');
-        
-        const inputBreakShort = document.getElementById('input-break-short');
-        const inputBreakLong = document.getElementById('input-break-long');
-        const inputAudioUrl = document.getElementById('input-audio-url');
-
-        const radius = 45;
-        const circumference = 2 * Math.PI * radius;
-        progressBar.style.strokeDasharray = `${circumference} ${circumference}`;
-        progressBar.style.strokeDashoffset = circumference;
-
-        const alarmAudio = document.createElement('audio');
-        document.body.appendChild(alarmAudio);
-
-        const cloudIndicator = document.getElementById('cloud-indicator');
-        const cloudText = document.getElementById('cloud-text');
-        const inputBinId = document.getElementById('input-bin-id');
-        const inputMasterKey = document.getElementById('input-master-key');
-
-        function updateCloudCredentials() {
-            localStorage.setItem(getKey('BinId'), inputBinId.value.trim());
-            localStorage.setItem(getKey('MasterKey'), inputMasterKey.value.trim());
-            sessionStorage.removeItem('CloudSynced');
-            autoCloudLoad();
-        }
-
-        function setCloudStatus(status) {
-            cloudIndicator.className = 'cloud-status-indicator';
-            if (status === 'syncing') {
-                cloudIndicator.classList.add('syncing'); cloudText.textContent = 'Sincronizando...';
-            } else if (status === 'success') {
-                cloudIndicator.style.color = 'var(--accent-color)'; cloudText.textContent = 'Salvo na Nuvem';
-                setTimeout(() => { cloudIndicator.style.color = ''; cloudText.textContent = 'Nuvem'; }, 3000);
-            } else if (status === 'error') {
-                cloudIndicator.style.color = '#ff6b6b'; cloudText.textContent = 'Erro de Sinc';
-            }
-        }
-
-        async function silentCloudSave() {
-            const binId = localStorage.getItem(getKey('BinId'));
-            const apiKey = localStorage.getItem(getKey('MasterKey'));
-            if (!binId || !apiKey) return;
-
-            setCloudStatus('syncing');
-            const payload = {
-                queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [],
-                history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
-                settings: {
-                    bgUrl: localStorage.getItem(getKey('BgUrl')) || '',
-                    audioUrl: localStorage.getItem(getKey('AudioUrl')) || '',
-                    textColor: localStorage.getItem(getKey('TextColor')) || '#37352f',
-                    bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff',
-                    bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85',
-                    shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a',
-                    longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc',
-                    fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif",
-                    fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif",
-                    breakShort: localStorage.getItem(getKey('BreakShort')) || '5',
-                    breakLong: localStorage.getItem(getKey('BreakLong')) || '15',
-                    examName: localStorage.getItem(getKey('ExamName')) || '',
-                    examDate: localStorage.getItem(getKey('ExamDate')) || ''
-                }
-            };
-
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload)
-                });
-                setCloudStatus('success');
-            } catch (error) { setCloudStatus('error'); }
-        }
-
-        async function autoCloudLoad() {
-            if (sessionStorage.getItem('CloudSynced')) return; 
-            
-            const binId = localStorage.getItem(getKey('BinId'));
-            const apiKey = localStorage.getItem(getKey('MasterKey'));
-            if (!binId || !apiKey) return;
-
-            setCloudStatus('syncing');
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-                    method: 'GET', headers: { 'X-Master-Key': apiKey }
-                });
-                if (!response.ok) throw new Error();
-                const data = await response.json(); const record = data.record;
-                
-                if (record.queue) originalSetItem.call(localStorage, getKey('Queue'), JSON.stringify(record.queue));
-                if (record.history) originalSetItem.call(localStorage, getKey('History'), JSON.stringify(record.history));
-                if (record.settings) {
-                    const s = record.settings;
-                    originalSetItem.call(localStorage, getKey('BgUrl'), s.bgUrl);
-                    originalSetItem.call(localStorage, getKey('AudioUrl'), s.audioUrl);
-                    originalSetItem.call(localStorage, getKey('TextColor'), s.textColor);
-                    originalSetItem.call(localStorage, getKey('BgColor'), s.bgColor);
-                    originalSetItem.call(localStorage, getKey('BgOpacity'), s.bgOpacity);
-                    originalSetItem.call(localStorage, getKey('ShortBreakColor'), s.shortBreakColor);
-                    originalSetItem.call(localStorage, getKey('LongBreakColor'), s.longBreakColor);
-                    originalSetItem.call(localStorage, getKey('FontText'), s.fontText);
-                    originalSetItem.call(localStorage, getKey('FontTimer'), s.fontTimer);
-                    if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort);
-                    if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
-                    if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName);
-                    if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
-                }
-                
-                sessionStorage.setItem('CloudSynced', 'true');
-                location.reload(); 
-            } catch(e) { setCloudStatus('error'); }
-        }
-
-        const originalSetItem = localStorage.setItem;
-        let autoSaveTimeout;
-        
-        localStorage.setItem = function(key, value) {
-            originalSetItem.apply(this, arguments); 
-            if (key.includes('TimerState') || key.includes('BinId') || key.includes('MasterKey')) return;
-            clearTimeout(autoSaveTimeout);
-            autoSaveTimeout = setTimeout(() => { silentCloudSave(); }, 2000);
-        };
-
-        window.addEventListener('load', autoCloudLoad);
-
-        function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
-
-        function saveTimerState() {
-            const state = { 
-                currentMode: currentMode, currentBlockIndex: currentBlockIndex, completedFocosCount: completedFocosCount, 
-                isRunning: isRunning, isGlobalRunning: isGlobalRunning,
-                targetEndTime: targetEndTime, timerStartTime: timerStartTime, globalStartTime: globalStartTime,
-                timeLeft: timeLeft, cronoTime: cronoTime, globalTime: globalTime
-            };
-            localStorage.setItem(getKey('TimerState'), JSON.stringify(state));
-        }
-
-        function formatMinutesDisplay(totalMins) {
-            if (totalMins < 60) return `${totalMins} min`;
-            const h = Math.floor(totalMins / 60); const m = totalMins % 60;
-            return m > 0 ? `${h}h ${m}min` : `${h}h`;
-        }
-
-        function calculateNetHoursToday() {
-            const history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-            let totalMins = 0;
-            
-            if (history[dateStr]) {
-                for (let subj in history[dateStr]) {
-                    totalMins += history[dateStr][subj].minutes || 0;
-                }
-            }
-            
-            const badge = document.getElementById('net-hours-today');
-            if (badge) {
-                if (totalMins < 60) {
-                    badge.textContent = `${totalMins}m líquidas hoje (Total)`;
-                } else {
-                    const h = Math.floor(totalMins / 60);
-                    const m = totalMins % 60;
-                    badge.textContent = `${h}h ${m}m líquidas hoje (Total)`;
-                }
-            }
+        function updateThemeColor(color) {
+            document.documentElement.style.setProperty('--accent', color);
+            let hex = color.replace('#', '');
+            let r = parseInt(hex.substring(0,2), 16), g = parseInt(hex.substring(2,4), 16), b = parseInt(hex.substring(4,6), 16);
+            document.documentElement.style.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.35)`);
         }
 
         function updateExamCountdown() {
@@ -688,644 +239,147 @@
             }
         }
 
-        function saveExamSettings() {
-            localStorage.setItem(getKey('ExamName'), document.getElementById('input-exam-name').value.trim());
-            localStorage.setItem(getKey('ExamDate'), document.getElementById('input-exam-date').value);
-            updateExamCountdown();
-            silentCloudSave();
+        // NOVO MOTOR BASEADO NO JAVASCRIPT NATIVO (Sem bloqueios do navegador)
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(internalTimer);
+                btnPlay.textContent = 'Retomar';
+                widget.classList.remove('running');
+            } else {
+                startTimeAbsolute = Date.now() - (timeCurrent * 1000);
+                internalTimer = setInterval(() => {
+                    timeCurrent = Math.floor((Date.now() - startTimeAbsolute) / 1000);
+                    updateDisplay();
+                    saveState();
+                }, 1000);
+                btnPlay.textContent = 'Pausar';
+                widget.classList.add('running');
+            }
+            isRunning = !isRunning;
+            saveState();
         }
 
-        function saveToHistory(subject, color, durationInSeconds) {
+        function resetTimer() {
+            if(isRunning) toggleTimer();
+            if(timeCurrent >= 1) {
+                saveToHistory();
+                btnPlay.textContent = '✅ Salvo!';
+                setTimeout(() => { btnPlay.textContent = 'Iniciar'; }, 2000);
+            } else {
+                btnPlay.textContent = 'Iniciar';
+            }
+            timeCurrent = 0;
+            updateDisplay();
+            saveState();
+        }
+
+        function updateDisplay() {
+            const h = Math.floor(timeCurrent / 3600).toString().padStart(2, '0');
+            const m = Math.floor((timeCurrent % 3600) / 60).toString().padStart(2, '0');
+            const s = (timeCurrent % 60).toString().padStart(2, '0');
+            
+            if (h === '00') {
+                display.textContent = `${m}:${s}`;
+                display.style.fontSize = '5.2rem';
+            } else {
+                display.textContent = `${h}:${m}:${s}`;
+                display.style.fontSize = '4.2rem';
+            }
+        }
+
+        function saveState() {
+            const state = { isRunning, timeCurrent, startTimeAbsolute, subj: subjInput.value, color: colorInput.value };
+            localStorage.setItem(getKey('StandaloneCronoState'), JSON.stringify(state));
+        }
+
+        function saveToHistory() {
+            const subject = subjInput.value.trim() || 'Estudo Geral';
+            const color = colorInput.value;
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (!history[dateStr]) history[dateStr] = {};
             if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color };
             
-            let minsToAdd = Math.round(durationInSeconds / 60);
+            let minsToAdd = Math.round(timeCurrent / 60);
             if (minsToAdd < 1) minsToAdd = 1; 
             
             history[dateStr][subject].minutes += minsToAdd;
             localStorage.setItem(getKey('History'), JSON.stringify(history));
-            calculateNetHoursToday(); 
-        }
-
-        function deleteHistoryItem(dateStr, subject) {
-            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            if (history[dateStr] && history[dateStr][subject]) {
-                delete history[dateStr][subject];
-                if (Object.keys(history[dateStr]).length === 0) {
-                    delete history[dateStr];
-                }
-                localStorage.setItem(getKey('History'), JSON.stringify(history));
-                silentCloudSave();
-                renderHistory();
-                calculateNetHoursToday(); 
-                if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
-            }
-        }
-
-        function saveEditHistory(dateStr, oldSubject) {
-            const safeOldSubj = oldSubject.replace(/\\'/g, "'");
-            const newSubj = document.getElementById('edit-hist-subj').value.trim();
-            const newMins = parseInt(document.getElementById('edit-hist-mins').value);
-            const newColor = document.getElementById('edit-hist-color').value;
-            const newDateIso = document.getElementById('edit-hist-date').value;
-
-            if (!newSubj || isNaN(newMins) || newMins < 1 || !newDateIso) return; 
-
-            let newDateStr = dateStr;
-            const dObj = new Date(newDateIso + 'T12:00:00'); 
-            newDateStr = dObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-
-            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             
-            if (history[dateStr] && history[dateStr][safeOldSubj]) {
-                delete history[dateStr][safeOldSubj];
-                if (Object.keys(history[dateStr]).length === 0) {
-                    delete history[dateStr];
-                }
-
-                if (!history[newDateStr]) history[newDateStr] = {};
-
-                if (history[newDateStr][newSubj]) {
-                    history[newDateStr][newSubj].minutes += newMins;
-                    history[newDateStr][newSubj].color = newColor; 
-                } else {
-                    history[newDateStr][newSubj] = { minutes: newMins, color: newColor };
-                }
-                
-                localStorage.setItem(getKey('History'), JSON.stringify(history));
-                silentCloudSave();
-            }
-            editingHistoryItem = null;
-            renderHistory();
-            calculateNetHoursToday(); 
-            if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
+            triggerCloudSync();
         }
 
-        function renderHistory() {
-            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            const dates = Object.keys(history).sort((a, b) => {
-                const numA = a.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
-                const numB = b.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
-                if(numA && numB) {
-                    const dateA = new Date(numA[3], numA[2]-1, numA[1]);
-                    const dateB = new Date(numB[3], numB[2]-1, numB[1]);
-                    return dateB - dateA;
-                }
-                return 0;
-            });
+        async function triggerCloudSync() {
+            const binId = localStorage.getItem(getKey('BinId'));
+            const apiKey = localStorage.getItem(getKey('MasterKey'));
+            if (!binId || !apiKey) return;
+
+            syncDot.className = 'sync-dot syncing';
             
-            const clearWrapper = document.getElementById('clear-history-wrapper');
-            historyContent.innerHTML = '';
-            if (dates.length === 0) { historyContent.innerHTML = '<div class="empty-msg" style="margin-top: 20px;">Nenhum estudo registrado ainda.</div>'; clearWrapper.style.display = 'none'; return; }
-            clearWrapper.style.display = 'block'; resetClearHistoryUI(); 
-            
-            dates.forEach(date => {
-                let html = `<div class="history-day"><span class="history-date-title">${date}</span>`;
-                for (let subj in history[date]) {
-                    const data = history[date][subj]; const displayTime = formatMinutesDisplay(data.minutes);
-                    const safeSubj = subj.replace(/'/g, "\\'"); 
-                    
-                    if (editingHistoryItem && editingHistoryItem.date === date && editingHistoryItem.subject === subj) {
-                        const nums = date.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
-                        let isoDate = "";
-                        if(nums) { isoDate = `${nums[3]}-${nums[2].padStart(2,'0')}-${nums[1].padStart(2,'0')}`; }
-
-                        html += `
-                            <div class="history-item" style="background: rgba(125,125,125,0.08); padding: 8px; border-radius: 8px; margin-bottom: 8px;">
-                                <div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center; width:100%;">
-                                    <input type="date" id="edit-hist-date" class="inline-input" value="${isoDate}" style="width: 105px; padding: 4px;">
-                                    <input type="text" id="edit-hist-subj" class="inline-input" value="${subj}" style="flex-grow:1; min-width: 100px; padding: 4px;">
-                                    <div class="color-wrapper" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;">
-                                        <input type="color" id="edit-hist-color" value="${data.color}" style="width: 32px; height: 32px; border:none; padding:0;">
-                                    </div>
-                                    <input type="number" id="edit-hist-mins" class="inline-input time" value="${data.minutes}" min="1" style="padding: 4px;">
-                                    <button class="action-btn" onclick="saveEditHistory('${date}', '${safeSubj}')">✅</button>
-                                    <button class="action-btn" onclick="cancelEditHistory()">❌</button>
-                                </div>
-                            </div>`;
-                    } else {
-                        html += `
-                            <div class="history-item">
-                                <div class="history-item-subject">
-                                    <span class="history-item-dot" style="background-color: ${data.color}"></span>
-                                    <span>${subj}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span><strong>${displayTime}</strong></span>
-                                    <div class="history-item-actions">
-                                        <button class="history-action-btn" onclick="startEditHistory('${date}', '${safeSubj}')" title="Editar">✏️</button>
-                                        <button class="history-action-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar">✖</button>
-                                    </div>
-                                </div>
-                            </div>`;
-                    }
+            const payload = {
+                queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [],
+                history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
+                settings: {
+                    bgUrl: localStorage.getItem(getKey('BgUrl')) || '',
+                    audioUrl: localStorage.getItem(getKey('AudioUrl')) || '',
+                    textColor: localStorage.getItem(getKey('TextColor')) || '#37352f',
+                    bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff',
+                    bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85',
+                    shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a',
+                    longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc',
+                    fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif",
+                    fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif",
+                    breakShort: localStorage.getItem(getKey('BreakShort')) || '5',
+                    breakLong: localStorage.getItem(getKey('BreakLong')) || '15',
+                    examName: localStorage.getItem(getKey('ExamName')) || '',
+                    examDate: localStorage.getItem(getKey('ExamDate')) || ''
                 }
-                html += `</div>`; historyContent.innerHTML += html;
-            });
-        }
-        
-        function startEditHistory(dateStr, subject) { editingHistoryItem = { date: dateStr, subject: subject.replace(/\\'/g, "'") }; renderHistory(); }
-        function cancelEditHistory() { editingHistoryItem = null; renderHistory(); }
-        function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir todo o histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; }
-        function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); calculateNetHoursToday(); }
-        function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
-        
-        function hideTimerElements(hide) {
-            document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1';
-            document.getElementById('global-timer-bar').style.opacity = hide ? '0' : '1';
-            document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8';
-            document.getElementById('main-controls').style.opacity = hide ? '0' : '1';
-        }
+            };
 
-        function toggleHistory() { 
-            if (!historyPanel.classList.contains('open')) renderHistory(); 
-            historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); 
-            hideTimerElements(historyPanel.classList.contains('open'));
-        }
-        function toggleSettings() { 
-            settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); 
-            hideTimerElements(settingsPanel.classList.contains('open'));
-        }
-        function toggleStats() { 
-            if (!statsPanel.classList.contains('open')) renderStats('hoje'); 
-            statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); 
-            hideTimerElements(statsPanel.classList.contains('open'));
-        }
-
-        function renderStats(period) {
-            document.getElementById('btn-stat-hoje').classList.remove('active');
-            document.getElementById('btn-stat-semana').classList.remove('active');
-            document.getElementById('btn-stat-todos').classList.remove('active');
-            document.getElementById(`btn-stat-${period}`).classList.add('active');
-
-            let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            let aggregatedData = {}; 
-            let totalPeriodMinutes = 0;
-
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-            let startDate = new Date(today);
-            if (period === 'semana') {
-                const day = startDate.getDay(); 
-                const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); 
-                startDate.setDate(diff); 
-            }
-
-            for (let dateStr in history) {
-                let recordDate = null;
-                const numbers = dateStr.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/);
-                if (numbers) {
-                    recordDate = new Date(parseInt(numbers[3], 10), parseInt(numbers[2], 10) - 1, parseInt(numbers[1], 10));
-                }
-
-                let isWithinPeriod = false;
-                if (period === 'todos') {
-                    isWithinPeriod = true;
-                } else if (recordDate) {
-                    if (recordDate >= startDate && recordDate <= today) {
-                        isWithinPeriod = true;
-                    }
-                } else if (dateStr.includes(now.toLocaleDateString('pt-BR'))) {
-                    isWithinPeriod = true; 
-                }
-
-                if (isWithinPeriod) {
-                    for (let subj in history[dateStr]) {
-                        if (!aggregatedData[subj]) {
-                            aggregatedData[subj] = { minutes: 0, color: history[dateStr][subj].color || '#ff6b6b' };
-                        }
-                        aggregatedData[subj].minutes += history[dateStr][subj].minutes;
-                        totalPeriodMinutes += history[dateStr][subj].minutes;
-                    }
-                }
-            }
-
-            const labels = [];
-            const data = [];
-            const bgColors = [];
-
-            for (let subj in aggregatedData) {
-                if (aggregatedData[subj].minutes > 0) {
-                    labels.push(subj); data.push(aggregatedData[subj].minutes); bgColors.push(aggregatedData[subj].color);
-                }
-            }
-
-            const emptyMsg = document.getElementById('stats-empty');
-            const canvas = document.getElementById('statsChart');
-
-            let totalDiv = document.getElementById('stats-total-time');
-            if (!totalDiv) {
-                totalDiv = document.createElement('div'); totalDiv.id = 'stats-total-time';
-                totalDiv.style.textAlign = 'center'; totalDiv.style.fontSize = '2rem';
-                totalDiv.style.fontFamily = 'var(--font-timer)'; totalDiv.style.fontWeight = 'bold';
-                totalDiv.style.margin = '5px 0 15px 0'; canvas.parentNode.insertBefore(totalDiv, canvas);
-            }
-
-            if (data.length === 0) {
-                emptyMsg.style.display = 'block'; canvas.style.display = 'none'; totalDiv.style.display = 'none';
-                if (myChart) myChart.destroy();
-            } else {
-                emptyMsg.style.display = 'none'; canvas.style.display = 'block'; totalDiv.style.display = 'block';
-                let hTotal = Math.floor(totalPeriodMinutes / 60); let mTotal = totalPeriodMinutes % 60;
-                totalDiv.textContent = hTotal > 0 ? `${hTotal}h ${mTotal}m` : `${mTotal}m`;
-
-                if (myChart) myChart.destroy();
-                const ctx = canvas.getContext('2d');
-                Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-                
-                myChart = new Chart(ctx, {
-                    type: 'pie', 
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data, backgroundColor: bgColors, borderWidth: 2,
-                            borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim()
-                        }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { font: { family: "'Plus Jakarta Sans', sans-serif" }, padding: 15, usePointStyle: true } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let mins = context.raw; let h = Math.floor(mins / 60); let m = mins % 60;
-                                        return ` ${context.label}: ${h > 0 ? h+'h '+m+'m' : m+'m'}`;
-                                    }
-                                }
-                            }
-                        }
-                    }
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload)
                 });
+                syncDot.className = 'sync-dot success';
+                setTimeout(() => { syncDot.className = 'sync-dot'; }, 3000);
+            } catch (error) { 
+                syncDot.className = 'sync-dot'; 
             }
         }
 
-        function updateDisplay() {
-            let timeToFormat = currentMode === 'crono' ? cronoTime : timeLeft;
-            if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
-            
-            const hours = Math.floor(timeToFormat / 3600); 
-            const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); 
-            const seconds = (timeToFormat % 60).toString().padStart(2, '0');
-            
-            if (hours > 0) { display.textContent = `${hours}:${minutes}:${seconds}`; display.style.fontSize = "1.8rem"; } 
-            else { display.textContent = `${minutes}:${seconds}`; display.style.fontSize = "2.5rem"; }
-            
-            if (currentMode === 'crono') {
-                const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
-                progressBar.style.strokeDashoffset = offset;
-            } else if (totalSecondsCurrent > 0) { 
-                const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; progressBar.style.strokeDashoffset = offset; 
-            }
-        }
-
-        function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
-        function updateBackground(url) { document.body.style.backgroundImage = url.trim() !== "" ? `url('${url}')` : 'none'; localStorage.setItem(getKey('BgUrl'), url); }
-        function updateAudioUrl(url) { localStorage.setItem(getKey('AudioUrl'), url); }
-        function updateThemeText(color) { document.documentElement.style.setProperty('--text-color', color); localStorage.setItem(getKey('TextColor'), color); if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
-        function updateThemeBg() {
-            const color = document.getElementById('theme-bg-color').value; const opacity = document.getElementById('theme-bg-opacity').value;
-            let hex = color.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
-            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
-            localStorage.setItem(getKey('BgColor'), color); localStorage.setItem(getKey('BgOpacity'), opacity);
-        }
-        function updateShortBreakColor(color) { shortBreakColor = color; if (currentMode === 'curta') document.documentElement.style.setProperty('--accent-color', shortBreakColor); localStorage.setItem(getKey('ShortBreakColor'), color); }
-        function updateLongBreakColor(color) { longBreakColor = color; if (currentMode === 'longa') document.documentElement.style.setProperty('--accent-color', longBreakColor); localStorage.setItem(getKey('LongBreakColor'), color); }
-        function updateFontText(fontStr) { document.documentElement.style.setProperty('--font-text', fontStr); localStorage.setItem(getKey('FontText'), fontStr); if(myChart && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-','')); }
-        function updateFontTimer(fontStr) { document.documentElement.style.setProperty('--font-timer', fontStr); localStorage.setItem(getKey('FontTimer'), fontStr); }
-
-        function addNewBlock() {
-            const subject = inputSubject.value.trim() !== "" ? inputSubject.value.trim() : "Estudo";
-            const color = inputColor.value; const minutes = parseInt(inputTime.value) || 25;
-            blocksQueue.push({ id: Date.now(), subject: subject, color: color, duration: minutes * 60, completed: false });
-            saveQueue(); inputSubject.value = ""; renderBlocksList();
-            if (blocksQueue.length === 1 && !isRunning) { 
-                if (currentMode === 'foco') loadBlock(0); 
-                else if (currentMode === 'crono') {
-                    currentBlockIndex = 0; subjectDisplay.textContent = blocksQueue[0].subject;
-                    document.documentElement.style.setProperty('--accent-color', blocksQueue[0].color); updateDisplay();
-                }
-            }
-        }
-
-        function playBlock(idx) { 
-            if (editingBlockIndex !== -1 || deletingBlockIndex !== -1) return; 
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-            if (currentMode === 'crono') {
-                currentBlockIndex = idx; let block = blocksQueue[currentBlockIndex]; subjectDisplay.textContent = block.subject;
-                document.documentElement.style.setProperty('--accent-color', block.color); updateDisplay(); saveTimerState(); renderBlocksList();
-            } else {
-                currentMode = 'foco'; switchModeUI('foco'); loadBlock(idx); 
-            }
-        }
-        
-        function startEdit(idx) { editingBlockIndex = idx; deletingBlockIndex = -1; renderBlocksList(); }
-        function saveEdit(idx) {
-            const newSubj = document.getElementById(`edit-subj-${idx}`).value.trim(); const newTime = parseInt(document.getElementById(`edit-time-${idx}`).value); const newColor = document.getElementById(`edit-color-${idx}`).value; 
-            if (newSubj !== "") blocksQueue[idx].subject = newSubj;
-            blocksQueue[idx].color = newColor; 
-            if (newTime > 0) { blocksQueue[idx].duration = newTime * 60; if (idx === currentBlockIndex && currentMode === 'foco') { totalSecondsCurrent = blocksQueue[idx].duration; if (!isRunning) timeLeft = blocksQueue[idx].duration; updateDisplay(); } }
-            if (idx === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono')) { subjectDisplay.textContent = blocksQueue[idx].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[idx].color); }
-            saveQueue(); saveTimerState(); editingBlockIndex = -1; renderBlocksList();
-        }
-        function cancelEdit() { editingBlockIndex = -1; renderBlocksList(); }
-        function startDelete(idx) { deletingBlockIndex = idx; editingBlockIndex = -1; renderBlocksList(); }
-        function confirmDelete(idx) {
-            blocksQueue.splice(idx, 1);
-            if (idx < currentBlockIndex) currentBlockIndex--; else if (idx === currentBlockIndex) { stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause(); loadBlock(currentBlockIndex); }
-            saveQueue(); deletingBlockIndex = -1; renderBlocksList();
-            if (blocksQueue.length === 0) { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; updateDisplay(); emptyMsg.style.display = "block"; saveTimerState(); }
-        }
-        function cancelDelete() { deletingBlockIndex = -1; renderBlocksList(); }
-
-        function forceMode(mode) {
-            stopInterval(); isRunning = false; startBtn.textContent = "Iniciar"; alarmAudio.pause();
-            if (mode === 'foco') {
-                currentMode = 'foco'; switchModeUI('foco'); 
-                if (blocksQueue.length > 0 && currentBlockIndex < blocksQueue.length) { loadBlock(currentBlockIndex); } 
-                else { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; updateDisplay(); saveTimerState(); }
-            } else if (mode === 'curta') { startPausa('curta'); } else if (mode === 'longa') { startPausa('longa'); } 
-            else if (mode === 'crono') {
-                currentMode = 'crono'; switchModeUI('crono');
-                if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject;
-                    document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
-                } else {
-                    subjectDisplay.textContent = "Estudo Livre"; document.documentElement.style.setProperty('--accent-color', '#b197fc');
-                }
-                updateDisplay(); saveTimerState(); renderBlocksList();
-            }
-        }
-
-        function updateLivePause(type) { 
-            if (type === 'curta') { localStorage.setItem(getKey('BreakShort'), inputBreakShort.value); } 
-            else { localStorage.setItem(getKey('BreakLong'), inputBreakLong.value); }
-            if (currentMode === type && !isRunning) startPausa(type); 
-            silentCloudSave();
-        }
-
-        function loadBlock(index) {
-            try {
-                if (!blocksQueue || !Array.isArray(blocksQueue)) { blocksQueue = []; }
-                if (blocksQueue.length === 0) {
-                    subjectDisplay.textContent = 'Nenhum bloco'; timeLeft = 0; totalSecondsCurrent = 1; 
-                    document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); renderBlocksList(); return;
-                }
-                if (index >= blocksQueue.length || index < 0 || isNaN(index)) { index = 0; }
-                currentBlockIndex = index; const block = blocksQueue[index];
-                if (!block) {
-                    subjectDisplay.textContent = 'Nenhum bloco'; timeLeft = 0; totalSecondsCurrent = 1; document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); return;
-                }
-                subjectDisplay.textContent = block.subject || "Estudo";
-                document.documentElement.style.setProperty('--accent-color', block.color || '#ff6b6b');
-                
-                if (block.remainingTime !== undefined && block.remainingTime > 0) { timeLeft = Number(block.remainingTime); } 
-                else if (block.duration !== undefined && block.duration > 0) { timeLeft = Number(block.duration); } 
-                else { timeLeft = 25 * 60; }
-                
-                totalSecondsCurrent = block.duration > 0 ? Number(block.duration) : (25 * 60); 
-                updateDisplay(); renderBlocksList();
-            } catch (erro) { console.error(erro); }
-        }
-
-        function startPausa(type) {
-            currentMode = type; switchModeUI(type);
-            const userMinutes = type === 'curta' ? (parseInt(inputBreakShort.value) || 5) : (parseInt(inputBreakLong.value) || 15);
-            timeLeft = userMinutes * 60; totalSecondsCurrent = userMinutes * 60; subjectDisplay.textContent = type === 'curta' ? "Pausa Curta" : "Pausa Longa";
-            document.documentElement.style.setProperty('--accent-color', type === 'curta' ? shortBreakColor : longBreakColor);
-            updateDisplay(); renderBlocksList(); saveTimerState();
-        }
-
-        function switchModeUI(mode) { document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active')); document.getElementById(`btn-${mode}`).classList.add('active'); }
-
-        // ==========================================
-        // MÉTODOS DOS CRONÔMETROS ABSOLUTOS
-        // ==========================================
-        function toggleTimer() {
-            try {
-                if (currentMode === 'crono') {
-                    if (isRunning) { 
-                        stopInterval(); startBtn.textContent = 'Iniciar'; 
-                    } else { 
-                        timerStartTime = Date.now() - (cronoTime * 1000); 
-                        startInterval(); startBtn.textContent = 'Pausar'; 
-                    }
-                    isRunning = !isRunning; saveTimerState(); updateDisplay(); return;
-                }
-                
-                if (blocksQueue.length === 0 && currentMode === 'foco') { alert("Adicione um bloco na lista antes de começar seu foco!"); return; }
-                
-                if (!isRunning) {
-                    let audioUrl = localStorage.getItem(getKey('AudioUrl'));
-                    if (!audioUrl || audioUrl.trim() === "") { audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'; }
-                    if (alarmAudio.src !== audioUrl) { alarmAudio.src = audioUrl; }
-                    alarmAudio.load(); 
-                }
-                
-                if (!isRunning && timeLeft <= 0) {
-                    if (currentMode === 'foco') { loadBlock(currentBlockIndex); } else { startPausa(currentMode); }
-                    if (timeLeft <= 0) return; 
-                }
-                
-                if (isRunning) { 
-                    stopInterval(); startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-                    if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; saveQueue(); }
-                } else { 
-                    targetEndTime = Date.now() + (timeLeft * 1000); 
-                    startInterval(); startBtn.textContent = 'Pausar'; 
-                }
-                
-                isRunning = !isRunning; saveTimerState(); updateDisplay(); 
-            } catch (erro) { console.error(erro); }
-        }
-
-        function resetTimer() {
-            stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.pause();
-            if (currentMode === 'crono') {
-                if (cronoTime >= 5) {
-                    let subj = "Estudo Livre"; let col = "#b197fc";
-                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                        subj = blocksQueue[currentBlockIndex].subject; col = blocksQueue[currentBlockIndex].color;
-                    }
-                    try {
-                        saveToHistory(subj, col, cronoTime);
-                        subjectDisplay.textContent = "✅ Tempo Salvo!";
-                        setTimeout(() => {
-                            if(currentMode === 'crono') {
-                                subjectDisplay.textContent = (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) ? blocksQueue[currentBlockIndex].subject : "Estudo Livre";
-                            }
-                        }, 3000);
-                    } catch(e) {}
-                }
-                cronoTime = 0; updateDisplay(); saveTimerState(); return;
-            }
-            if (currentMode === 'foco') {
-                if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) {
-                    delete blocksQueue[currentBlockIndex].remainingTime; saveQueue(); loadBlock(currentBlockIndex);
-                }
-            } else if (currentMode === 'curta') { startPausa('curta'); } else if (currentMode === 'longa') { startPausa('longa'); }
-            updateDisplay(); saveTimerState();
-        }
-
-        function countdown() {
-            if (!isRunning) return;
-            const now = Date.now();
-            
-            if (currentMode === 'crono') { 
-                cronoTime = Math.floor((now - timerStartTime) / 1000);
-                updateDisplay(); saveTimerState(); 
-                return; 
-            }
-
-            timeLeft = Math.max(0, Math.ceil((targetEndTime - now) / 1000));
-            if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { 
-                blocksQueue[currentBlockIndex].remainingTime = timeLeft; 
-            }
-
-            if (timeLeft > 0) { 
-                updateDisplay(); saveTimerState(); 
-            } else {
-                timeLeft = 0; updateDisplay(); stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; playAlarm();
-                if (currentMode === 'foco') {
-                    if(blocksQueue[currentBlockIndex]) { 
-                        blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; 
-                        saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); 
-                    }
-                    completedFocosCount++; renderBlocksList();
-                    if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); }
-                } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); }
-                saveTimerState();
-            }
-        }
-
-        function toggleGlobalTimer() {
-            const btn = document.getElementById('global-play-btn');
-            if (isGlobalRunning) {
-                globalWorker.postMessage('stop');
-                btn.textContent = '▶'; btn.classList.remove('play');
-            } else {
-                globalStartTime = Date.now() - (globalTime * 1000);
-                globalWorker.postMessage('start');
-                btn.textContent = '⏸'; btn.classList.add('play');
-            }
-            isGlobalRunning = !isGlobalRunning; saveTimerState();
-        }
-
-        function resetGlobalTimer() {
-            if (isGlobalRunning) toggleGlobalTimer();
-            if (globalTime >= 5) {
-                try {
-                    saveToHistory("Estudo Global", "#3b82f6", globalTime);
-                    const btn = document.getElementById('global-reset-btn');
-                    btn.textContent = "✅"; setTimeout(() => btn.textContent = "↻", 2000);
-                } catch(e) {}
-            }
-            globalTime = 0; updateGlobalDisplay(); saveTimerState();
-        }
-
-        function globalCountdown() {
-            if (!isGlobalRunning) return;
-            globalTime = Math.floor((Date.now() - globalStartTime) / 1000);
-            updateGlobalDisplay(); saveTimerState();
-        }
-
-        // NOVO: FORÇA A ATUALIZAÇÃO ASSIM QUE VOCÊ VOLTA PARA O APLICATIVO
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                if (isRunning) countdown();
-                if (isGlobalRunning) globalCountdown();
+            if (document.visibilityState === 'visible' && isRunning) {
+                timeCurrent = Math.floor((Date.now() - startTimeAbsolute) / 1000);
+                updateDisplay();
             }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedBgUrl = localStorage.getItem(getKey('BgUrl')) || '';
-            const savedAudioUrl = localStorage.getItem(getKey('AudioUrl')) || '';
-            const savedTextColor = localStorage.getItem(getKey('TextColor')) || '#37352f';
-            const savedBgColor = localStorage.getItem(getKey('BgColor')) || '#ffffff';
-            const savedBgOpacity = localStorage.getItem(getKey('BgOpacity')) || '0.85';
-            shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
-            longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
-    
-            document.getElementById('input-break-short').value = localStorage.getItem(getKey('BreakShort')) || '5';
-            document.getElementById('input-break-long').value = localStorage.getItem(getKey('BreakLong')) || '15';
-            document.getElementById('theme-font-text').value = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
-            document.getElementById('theme-font-timer').value = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
+        window.onload = () => {
+            updateThemeColor(colorInput.value);
+            updateExamCountdown();
 
-            document.getElementById('bg-url').value = savedBgUrl;
-            document.getElementById('input-audio-url').value = savedAudioUrl;
-            document.getElementById('theme-text-color').value = savedTextColor;
-            document.getElementById('theme-bg-color').value = savedBgColor;
-            document.getElementById('theme-bg-opacity').value = savedBgOpacity;
-            document.getElementById('theme-short-break-color').value = shortBreakColor;
-            document.getElementById('theme-long-break-color').value = longBreakColor;
-
-            document.getElementById('input-exam-name').value = localStorage.getItem(getKey('ExamName')) || '';
-            document.getElementById('input-exam-date').value = localStorage.getItem(getKey('ExamDate')) || '';
-
-            const savedBinId = localStorage.getItem(getKey('BinId')) || '';
-            const savedMasterKey = localStorage.getItem(getKey('MasterKey')) || '';
-            document.getElementById('input-bin-id').value = savedBinId;
-            document.getElementById('input-master-key').value = savedMasterKey;
-
-            if (savedBgUrl.trim() !== "") document.body.style.backgroundImage = `url('${savedBgUrl}')`;
-            document.documentElement.style.setProperty('--text-color', savedTextColor);
-            let hex = savedBgColor.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
-            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${savedBgOpacity})`);
-            document.documentElement.style.setProperty('--font-text', localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif");
-            document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
-
-            renderBlocksList();
-            calculateNetHoursToday();
-            updateExamCountdown();   
-            
-            const savedState = JSON.parse(localStorage.getItem(getKey('TimerState')));
-            if (savedState) { 
-                currentMode = savedState.currentMode || 'foco';
-                currentBlockIndex = savedState.currentBlockIndex || 0;
-                completedFocosCount = savedState.completedFocosCount || 0;
-
-                cronoTime = savedState.cronoTime || 0; 
-                timeLeft = savedState.timeLeft || 0;
-                globalTime = savedState.globalTime || 0;
-
-                if (savedState.isGlobalRunning) {
-                    isGlobalRunning = true;
-                    globalStartTime = savedState.globalStartTime;
-                    globalWorker.postMessage('start');
-                    const btn = document.getElementById('global-play-btn');
-                    btn.textContent = '⏸'; btn.classList.add('play');
-                }
-                updateGlobalDisplay();
-
-                if (savedState.isRunning) {
+            const saved = JSON.parse(localStorage.getItem(getKey('StandaloneCronoState')));
+            if (saved) {
+                if(saved.subj) subjInput.value = saved.subj;
+                if(saved.color) { colorInput.value = saved.color; updateThemeColor(saved.color); }
+                timeCurrent = saved.timeCurrent || 0;
+                
+                if (saved.isRunning) {
                     isRunning = true;
-                    targetEndTime = savedState.targetEndTime;
-                    timerStartTime = savedState.timerStartTime;
-                    startInterval(); startBtn.textContent = 'Pausar';
-                }
-                
-                if (isRunning) countdown();
-                if (isGlobalRunning) globalCountdown();
-                
-                switchModeUI(currentMode);
-                if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
-                    subjectDisplay.textContent = blocksQueue[currentBlockIndex].subject; document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b');
-                } else if (currentMode === 'curta' || currentMode === 'longa') {
-                    subjectDisplay.textContent = currentMode === 'curta' ? "Pausa Curta" : "Pausa Longa"; document.documentElement.style.setProperty('--accent-color', currentMode === 'curta' ? shortBreakColor : longBreakColor);
-                } else if (currentMode === 'crono') {
-                    subjectDisplay.textContent = (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) ? blocksQueue[currentBlockIndex].subject : "Estudo Livre";
-                    if (blocksQueue.length > 0 && blocksQueue[currentBlockIndex]) document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color);
+                    startTimeAbsolute = saved.startTimeAbsolute;
+                    timeCurrent = Math.floor((Date.now() - startTimeAbsolute) / 1000);
+                    internalTimer = setInterval(() => {
+                        timeCurrent = Math.floor((Date.now() - startTimeAbsolute) / 1000);
+                        updateDisplay();
+                        saveState();
+                    }, 1000);
+                    btnPlay.textContent = 'Pausar';
+                    widget.classList.add('running');
                 }
                 updateDisplay();
-            } else {
-                currentMode = 'foco'; switchModeUI('foco');
-                if (blocksQueue.length > 0) { let firstUncompleted = blocksQueue.findIndex(b => !b.completed); loadBlock(firstUncompleted !== -1 ? firstUncompleted : 0); } 
-                else { subjectDisplay.textContent = "Sem blocos"; timeLeft = 0; totalSecondsCurrent = 1; document.documentElement.style.setProperty('--accent-color', '#ff6b6b'); updateDisplay(); }
             }
-        });
+        };
     </script>
 </body>
 </html>
