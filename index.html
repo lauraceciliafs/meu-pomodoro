@@ -468,11 +468,11 @@
 
         function updateCloudCredentials() {
             const btn = document.getElementById('btn-conectar-nuvem');
-            if(btn) btn.textContent = 'Sincronizando...';
+            if(btn) btn.textContent = '⏳ Conectando...';
             localStorage.setItem(getKey('BinId'), inputBinId.value.trim());
             localStorage.setItem(getKey('MasterKey'), inputMasterKey.value.trim());
             sessionStorage.removeItem('CloudSynced');
-            autoCloudLoad();
+            autoCloudLoad(true);
         }
 
         function setCloudStatus(status) {
@@ -492,14 +492,16 @@
             try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
         }
 
-        async function autoCloudLoad() {
-            if (sessionStorage.getItem('CloudSynced')) return; 
+        async function autoCloudLoad(isManual = false) {
+            if (!isManual && sessionStorage.getItem('CloudSynced')) return; 
             const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
+            const btn = document.getElementById('btn-conectar-nuvem');
+            
             if (!binId || !apiKey) {
-                const btn = document.getElementById('btn-conectar-nuvem');
                 if(btn) btn.textContent = '☁️ Conectar e Puxar Dados';
                 return;
             }
+            
             setCloudStatus('syncing');
             try {
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, { method: 'GET', headers: { 'X-Master-Key': apiKey } });
@@ -516,11 +518,27 @@
                     if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort); if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
                     if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName); if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
                 }
-                sessionStorage.setItem('CloudSynced', 'true'); location.reload(); 
+                sessionStorage.setItem('CloudSynced', 'true'); 
+                setCloudStatus('success');
+                
+                if(isManual && btn) {
+                    btn.textContent = '✅ Sincronizado! Atualizando...';
+                    btn.style.backgroundColor = 'var(--accent-color)';
+                    btn.style.color = '#fff';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    location.reload(); 
+                }
             } catch(e) { 
                 setCloudStatus('error'); 
-                const btn = document.getElementById('btn-conectar-nuvem');
-                if(btn) btn.textContent = 'Erro! Verifique as chaves e tente novamente';
+                if(isManual && btn) {
+                    btn.textContent = '❌ Erro! Verifique as chaves';
+                    setTimeout(() => {
+                        btn.textContent = '☁️ Conectar e Puxar Dados';
+                        btn.style.backgroundColor = 'transparent';
+                        btn.style.color = 'var(--text-color)';
+                    }, 3000);
+                }
             }
         }
 
@@ -530,7 +548,13 @@
             if (key.includes('TimerState') || key.includes('BinId') || key.includes('MasterKey')) return;
             clearTimeout(autoSaveTimeout); autoSaveTimeout = setTimeout(() => { silentCloudSave(); }, 2000);
         };
-        window.addEventListener('load', autoCloudLoad);
+        
+        window.addEventListener('load', () => {
+            // DEVOLVE AS CHAVES PARA AS CAIXINHAS AO CARREGAR A PÁGINA
+            document.getElementById('input-bin-id').value = localStorage.getItem(getKey('BinId')) || '';
+            document.getElementById('input-master-key').value = localStorage.getItem(getKey('MasterKey')) || '';
+            autoCloudLoad();
+        });
 
         function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
         function saveTimerState() { const state = { currentMode, currentBlockIndex, completedFocosCount, isRunning, targetEndTime, timerStartTime, timeLeft, cronoTime }; localStorage.setItem(getKey('TimerState'), JSON.stringify(state)); }
