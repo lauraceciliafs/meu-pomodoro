@@ -292,7 +292,6 @@
 
             <div class="stats-divider"><span>Trilha da Aprovação</span></div>
 
-            <!-- GitHub Style Heatmap -->
             <div class="heatmap-outer">
                 <div class="heatmap-inner">
                     <div class="heatmap-months" id="heatmap-months"></div>
@@ -305,7 +304,6 @@
                 </div>
             </div>
 
-            <!-- GitHub Style Legend -->
             <div class="heatmap-legend">
                 <span style="margin-right: 4px;">Menos</span>
                 <div class="heatmap-cell" style="background: rgba(125,125,125,0.15)"></div>
@@ -427,22 +425,22 @@
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // MÉTODOS DE ÂNCORA ABSOLUTA
+        // Variáveis do Sistema
         let targetEndTime = 0; let timerStartTime = 0; let isRunning = false;
         let timeLeft = 0; let cronoTime = 0; let totalSecondsCurrent = 0;
-        
         let blocksQueue = JSON.parse(localStorage.getItem(getKey('Queue'))) || [];
         let currentMode = 'foco'; let currentBlockIndex = 0; let completedFocosCount = 0; 
-        
         let editingBlockIndex = -1; let deletingBlockIndex = -1; let editingHistoryItem = null; 
         let shortBreakColor = '#8ce99a'; let longBreakColor = '#74c0fc';
 
+        // Worker do Tempo (Imune a Tela Desligada)
         const workerScript = `let interval; self.onmessage = function(e) { if (e.data === 'start') { interval = setInterval(() => self.postMessage('tick'), 1000); } else if (e.data === 'stop') { clearInterval(interval); } };`;
         const timerWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
         timerWorker.onmessage = function() { countdown(); };
         function startInterval() { timerWorker.postMessage('start'); }
         function stopInterval() { timerWorker.postMessage('stop'); }
 
+        // Elementos UI
         const display = document.getElementById('timer-display'); const startBtn = document.getElementById('start-btn');
         const subjectDisplay = document.getElementById('current-subject-display'); const progressBar = document.getElementById('progress-bar');
         const settingsPanel = document.getElementById('settings-panel'); const historyPanel = document.getElementById('history-panel');
@@ -466,13 +464,16 @@
             return `${r}, ${g}, ${b}`;
         }
 
+        // ==========================================
+        // SISTEMA DE NUVEM (ATUALIZADO SEM F5 ABRUPTO)
+        // ==========================================
         function updateCloudCredentials() {
             const btn = document.getElementById('btn-conectar-nuvem');
-            if(btn) btn.textContent = '⏳ Conectando...';
+            if(btn) btn.textContent = '⏳ Conectando e baixando dados...';
             localStorage.setItem(getKey('BinId'), inputBinId.value.trim());
             localStorage.setItem(getKey('MasterKey'), inputMasterKey.value.trim());
             sessionStorage.removeItem('CloudSynced');
-            autoCloudLoad(true);
+            autoCloudLoad(true); // isManual = true
         }
 
         function setCloudStatus(status) {
@@ -480,6 +481,117 @@
             if (status === 'syncing') { cloudIndicator.classList.add('syncing'); cloudText.textContent = 'Sincronizando...'; } 
             else if (status === 'success') { cloudIndicator.style.color = 'var(--accent-color)'; cloudText.textContent = 'Salvo na Nuvem'; setTimeout(() => { cloudIndicator.style.color = ''; cloudText.textContent = 'Nuvem'; }, 3000); } 
             else if (status === 'error') { cloudIndicator.style.color = '#ff6b6b'; cloudText.textContent = 'Erro de Sinc'; }
+        }
+
+        async function autoCloudLoad(isManual = false) {
+            if (!isManual && sessionStorage.getItem('CloudSynced')) return; 
+            const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
+            const btn = document.getElementById('btn-conectar-nuvem');
+            
+            if (!binId || !apiKey) {
+                if(btn) btn.textContent = '☁️ Conectar e Puxar Dados'; return;
+            }
+            
+            setCloudStatus('syncing');
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, { method: 'GET', headers: { 'X-Master-Key': apiKey } });
+                if (!response.ok) throw new Error(); 
+                const record = (await response.json()).record;
+                
+                if (record.queue) {
+                    originalSetItem.call(localStorage, getKey('Queue'), JSON.stringify(record.queue));
+                    blocksQueue = record.queue; // Atualiza a variável local
+                }
+                if (record.history) originalSetItem.call(localStorage, getKey('History'), JSON.stringify(record.history));
+                if (record.settings) {
+                    const s = record.settings;
+                    originalSetItem.call(localStorage, getKey('BgUrl'), s.bgUrl || ''); 
+                    originalSetItem.call(localStorage, getKey('AudioUrl'), s.audioUrl || '');
+                    originalSetItem.call(localStorage, getKey('TextColor'), s.textColor || '#37352f'); 
+                    originalSetItem.call(localStorage, getKey('BgColor'), s.bgColor || '#ffffff');
+                    originalSetItem.call(localStorage, getKey('BgOpacity'), s.bgOpacity || '0.85'); 
+                    originalSetItem.call(localStorage, getKey('HeatmapColor'), s.heatmapColor || '#ff6b6b');
+                    originalSetItem.call(localStorage, getKey('ShortBreakColor'), s.shortBreakColor || '#8ce99a'); 
+                    originalSetItem.call(localStorage, getKey('LongBreakColor'), s.longBreakColor || '#74c0fc');
+                    originalSetItem.call(localStorage, getKey('FontText'), s.fontText || "'Plus Jakarta Sans', sans-serif"); 
+                    originalSetItem.call(localStorage, getKey('FontTimer'), s.fontTimer || "'Playfair Display', serif");
+                    if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort); 
+                    if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
+                    if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName); 
+                    if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
+                }
+                
+                sessionStorage.setItem('CloudSynced', 'true'); setCloudStatus('success');
+                
+                if(isManual && btn) {
+                    btn.textContent = '✅ Sucesso! Painel Atualizado.';
+                    btn.style.backgroundColor = 'var(--text-color)'; btn.style.color = 'var(--bg-card)';
+                    
+                    applySettingsToUI(); // Atualiza a tela inteira sem fechar as configurações!
+                    
+                    setTimeout(() => {
+                        btn.textContent = '☁️ Conectar e Puxar Dados';
+                        btn.style.backgroundColor = 'transparent'; btn.style.color = 'var(--text-color)';
+                    }, 3000);
+                } else {
+                    location.reload(); // Só recarrega se for o loading automático de quando abre o Notion
+                }
+            } catch(e) { 
+                setCloudStatus('error'); 
+                if(isManual && btn) {
+                    btn.textContent = '❌ Erro! Verifique as chaves';
+                    setTimeout(() => { btn.textContent = '☁️ Conectar e Puxar Dados'; }, 3000);
+                }
+            }
+        }
+
+        function applySettingsToUI() {
+            // Atualiza os inputs do menu de configurações
+            document.getElementById('input-exam-name').value = localStorage.getItem(getKey('ExamName')) || '';
+            document.getElementById('input-exam-date').value = localStorage.getItem(getKey('ExamDate')) || '';
+            document.getElementById('input-break-short').value = localStorage.getItem(getKey('BreakShort')) || '5';
+            document.getElementById('input-break-long').value = localStorage.getItem(getKey('BreakLong')) || '15';
+            document.getElementById('theme-font-text').value = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
+            document.getElementById('theme-font-timer').value = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
+            document.getElementById('input-audio-url').value = localStorage.getItem(getKey('AudioUrl')) || '';
+            document.getElementById('bg-url').value = localStorage.getItem(getKey('BgUrl')) || '';
+            document.getElementById('theme-text-color').value = localStorage.getItem(getKey('TextColor')) || '#37352f';
+            document.getElementById('theme-bg-color').value = localStorage.getItem(getKey('BgColor')) || '#ffffff';
+            document.getElementById('theme-heatmap-color').value = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
+            document.getElementById('theme-bg-opacity').value = localStorage.getItem(getKey('BgOpacity')) || '0.85';
+
+            // Aplica Cores e Fontes na tela
+            const bgUrl = localStorage.getItem(getKey('BgUrl')) || '';
+            document.body.style.backgroundImage = bgUrl.trim() !== "" ? `url('${bgUrl}')` : 'none';
+            document.documentElement.style.setProperty('--text-color', localStorage.getItem(getKey('TextColor')) || '#37352f');
+            
+            const bgColor = localStorage.getItem(getKey('BgColor')) || '#ffffff';
+            const opacity = localStorage.getItem(getKey('BgOpacity')) || '0.85';
+            let hex = bgColor.replace('#', ''); 
+            let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
+            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
+            
+            const hmColor = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
+            document.documentElement.style.setProperty('--heatmap-color', hexToRgb(hmColor));
+            
+            shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a';
+            longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
+            
+            document.documentElement.style.setProperty('--font-text', localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif");
+            document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
+
+            // Atualiza os componentes do painel
+            updateExamCountdown();
+            calculateNetHoursToday();
+            renderBlocksList();
+            
+            if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) {
+                document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b');
+            } else if (currentMode === 'curta') {
+                document.documentElement.style.setProperty('--accent-color', shortBreakColor);
+            } else if (currentMode === 'longa') {
+                document.documentElement.style.setProperty('--accent-color', longBreakColor);
+            }
         }
 
         async function silentCloudSave() {
@@ -492,56 +604,6 @@
             try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
         }
 
-        async function autoCloudLoad(isManual = false) {
-            if (!isManual && sessionStorage.getItem('CloudSynced')) return; 
-            const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
-            const btn = document.getElementById('btn-conectar-nuvem');
-            
-            if (!binId || !apiKey) {
-                if(btn) btn.textContent = '☁️ Conectar e Puxar Dados';
-                return;
-            }
-            
-            setCloudStatus('syncing');
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, { method: 'GET', headers: { 'X-Master-Key': apiKey } });
-                if (!response.ok) throw new Error(); const record = (await response.json()).record;
-                if (record.queue) originalSetItem.call(localStorage, getKey('Queue'), JSON.stringify(record.queue));
-                if (record.history) originalSetItem.call(localStorage, getKey('History'), JSON.stringify(record.history));
-                if (record.settings) {
-                    const s = record.settings;
-                    originalSetItem.call(localStorage, getKey('BgUrl'), s.bgUrl); originalSetItem.call(localStorage, getKey('AudioUrl'), s.audioUrl);
-                    originalSetItem.call(localStorage, getKey('TextColor'), s.textColor); originalSetItem.call(localStorage, getKey('BgColor'), s.bgColor);
-                    originalSetItem.call(localStorage, getKey('BgOpacity'), s.bgOpacity); originalSetItem.call(localStorage, getKey('HeatmapColor'), s.heatmapColor || '#ff6b6b');
-                    originalSetItem.call(localStorage, getKey('ShortBreakColor'), s.shortBreakColor); originalSetItem.call(localStorage, getKey('LongBreakColor'), s.longBreakColor);
-                    originalSetItem.call(localStorage, getKey('FontText'), s.fontText); originalSetItem.call(localStorage, getKey('FontTimer'), s.fontTimer);
-                    if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort); if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
-                    if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName); if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
-                }
-                sessionStorage.setItem('CloudSynced', 'true'); 
-                setCloudStatus('success');
-                
-                if(isManual && btn) {
-                    btn.textContent = '✅ Sincronizado! Atualizando...';
-                    btn.style.backgroundColor = 'var(--accent-color)';
-                    btn.style.color = '#fff';
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    location.reload(); 
-                }
-            } catch(e) { 
-                setCloudStatus('error'); 
-                if(isManual && btn) {
-                    btn.textContent = '❌ Erro! Verifique as chaves';
-                    setTimeout(() => {
-                        btn.textContent = '☁️ Conectar e Puxar Dados';
-                        btn.style.backgroundColor = 'transparent';
-                        btn.style.color = 'var(--text-color)';
-                    }, 3000);
-                }
-            }
-        }
-
         const originalSetItem = localStorage.setItem; let autoSaveTimeout;
         localStorage.setItem = function(key, value) {
             originalSetItem.apply(this, arguments); 
@@ -550,12 +612,76 @@
         };
         
         window.addEventListener('load', () => {
-            // DEVOLVE AS CHAVES PARA AS CAIXINHAS AO CARREGAR A PÁGINA
+            // Mantém as chaves na tela quando você entra
             document.getElementById('input-bin-id').value = localStorage.getItem(getKey('BinId')) || '';
             document.getElementById('input-master-key').value = localStorage.getItem(getKey('MasterKey')) || '';
             autoCloudLoad();
         });
 
+        // ==========================================
+        // RENDER DA LISTA DE BLOCOS (O QUE HAVIA SUMIDO)
+        // ==========================================
+        function renderBlocksList() {
+            blocksListContainer.innerHTML = '';
+            if (!blocksQueue || blocksQueue.length === 0) {
+                emptyMsg.style.display = 'block';
+                blocksListContainer.appendChild(emptyMsg);
+                return;
+            }
+            emptyMsg.style.display = 'none';
+            
+            blocksQueue.forEach((block, index) => {
+                const item = document.createElement('div');
+                item.className = 'block-item';
+                if (index === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono')) {
+                    item.classList.add('current-active');
+                }
+                
+                if (editingBlockIndex === index) {
+                    item.innerHTML = `
+                        <div style="display:flex; gap:6px; width:100%; align-items:center;">
+                            <input type="text" id="edit-subj-${index}" class="inline-input" value="${block.subject}" style="flex-grow:1;">
+                            <div class="color-wrapper" style="width:24px; height:24px; border-radius:6px; flex-shrink:0;">
+                                <input type="color" id="edit-color-${index}" value="${block.color}" style="width:32px; height:32px; border:none; padding:0;">
+                            </div>
+                            <input type="number" id="edit-time-${index}" class="inline-input time" value="${Math.floor(block.duration / 60)}" min="1">
+                            <button class="action-btn" onclick="saveEdit(${index})">✅</button>
+                            <button class="action-btn" onclick="cancelEdit()">❌</button>
+                        </div>
+                    `;
+                } else if (deletingBlockIndex === index) {
+                    item.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center; background:rgba(255,107,107,0.1); padding:4px 8px; border-radius:6px; border: 1px dashed var(--accent-color);">
+                            <span style="font-size:0.75rem; font-weight:600; color:var(--accent-color);">Excluir bloco?</span>
+                            <div style="display:flex; gap:10px;">
+                                <button class="action-btn" onclick="confirmDelete(${index})">✅</button>
+                                <button class="action-btn" onclick="cancelDelete()">❌</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    let durationStr = block.remainingTime ? `${Math.ceil(block.remainingTime / 60)}m restando` : `${Math.floor(block.duration / 60)}m`;
+                    if (block.completed) durationStr = "✅ Concluído";
+                    item.innerHTML = `
+                        <div class="block-dot" style="background-color: ${block.color}; opacity: ${block.completed ? '0.3' : '1'};"></div>
+                        <div class="block-info-wrapper">
+                            <div class="block-text-group" style="opacity: ${block.completed ? '0.5' : '1'};">
+                                <span class="block-name" style="${block.completed ? 'text-decoration: line-through;' : ''}">${block.subject}</span>
+                                <span class="block-duration">${durationStr}</span>
+                            </div>
+                            <div class="block-actions">
+                                <button class="action-btn" onclick="playBlock(${index})" title="Estudar este">▶️</button>
+                                <button class="action-btn" onclick="startEdit(${index})" title="Editar">✏️</button>
+                                <button class="action-btn" onclick="startDelete(${index})" title="Apagar">✖</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                blocksListContainer.appendChild(item);
+            });
+        }
+
+        // Outros Métodos Essenciais
         function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
         function saveTimerState() { const state = { currentMode, currentBlockIndex, completedFocosCount, isRunning, targetEndTime, timerStartTime, timeLeft, cronoTime }; localStorage.setItem(getKey('TimerState'), JSON.stringify(state)); }
 
