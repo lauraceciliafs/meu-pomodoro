@@ -720,37 +720,39 @@
                     }
                 }
 
-                function tick() {
-                    if (pipGlobalLeft > 0) pipGlobalLeft--;
-                    pipCurrentLapTime++;
+            function tick() {
+                if (pipGlobalLeft > 0) pipGlobalLeft--;
+                pipCurrentLapTime++;
 
-                    globalDisplay.textContent = formatTime(pipGlobalLeft);
-                    lapDisplay.textContent = formatTime(pipCurrentLapTime);
+                globalDisplay.textContent = formatTime(pipGlobalLeft);
+                lapDisplay.textContent = formatTime(pipCurrentLapTime);
 
-                    const status = getStatusClass(pipCurrentLapTime);
-                    lapDisplay.className = `lap-timer ${status}`;
-                    lapCard.className = `lap-container border-${status}`;
+                const status = getStatusClass(pipCurrentLapTime);
+                lapDisplay.className = `lap-timer ${status}`;
+                lapCard.className = `lap-container border-${status}`;
 
-                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
-                    if (diff > 0) {
-                        lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`;
-                        lapDiffDisplay.className = 'lap-diff safe';
-                    } else if (diff === 0) {
-                        lapDiffDisplay.textContent = `No limite da meta!`;
-                        lapDiffDisplay.className = 'lap-diff warning';
-                    } else {
-                        lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de outras questões!`;
-                        lapDiffDisplay.className = 'lap-diff danger';
-                    }
+                const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
+                if (diff > 0) {
+                lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`;
+                lapDiffDisplay.className = 'lap-diff safe';
+        } else if (diff === 0) {
+        lapDiffDisplay.textContent = `No limite da meta!`;
+        lapDiffDisplay.className = 'lap-diff warning';
+        } else {
+        lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de outras questões!`;
+        lapDiffDisplay.className = 'lap-diff danger';
+        
+        // 🚨 AVISO OPCIONAL: Se quiser que toque um bipe suave sempre que estourar o tempo de uma questão:
+        // if (diff === -1) { alarmAudio.play().catch(e=>{}); }
+    }
 
-                    // Fim do tempo global bateu em ZERO
-                    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
-                        pipGlobalLeft = 0;
-                        globalDisplay.style.color = 'var(--pip-danger)';
-                        finishSpeedrunner();
-                    }
-                }
-
+    // Alerta de Fim de Prova
+    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
+        pipGlobalLeft = 0;
+        globalDisplay.style.color = 'var(--pip-danger)';
+        finishSpeedrunner(); // Aqui já dispara o alarme e salva no histórico!
+    }
+}
                 function nextQuestion() {
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
                     const statusColor = diff >= 0 ? 'var(--pip-safe)' : 'var(--pip-danger)';
