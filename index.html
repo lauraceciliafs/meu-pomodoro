@@ -305,7 +305,7 @@
             </div>
             
             <p style="font-size: 0.8rem; color: var(--text-color); opacity: 0.8; margin-top: 0; margin-bottom: 20px;">
-                Crie uma janela flutuante com as <b>cores do seu painel</b> para administrar sua Bolsa de Minutos.
+                Treine sua administração de tempo de prova. O tempo será adicionado ao seu histórico.
             </p>
             
             <div class="setting-group flex-row">
@@ -319,11 +319,16 @@
                 </div>
             </div>
             
+            <div class="setting-group">
+                <span class="setting-label">📚 Matéria para o Histórico</span>
+                <input type="text" id="inp-pip-subject" class="setting-input" value="Simulado PVO">
+            </div>
+
             <div id="pip-calc-preview" style="background: rgba(125,125,125,0.05); border: 1px dashed var(--accent-color); padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;">
                 Alvo: <strong>05:00</strong> por questão.
             </div>
             
-            <button class="main-btn" style="width: 100%; border-color: var(--text-color); font-weight: bold; background: var(--text-color); color: var(--bg-card);" onclick="openFloatingWindow()">🚀 Abrir Janela Flutuante</button>
+            <button class="main-btn" style="width: 100%; border-color: var(--text-color); font-weight: bold; background: var(--text-color); color: var(--bg-card);" onclick="openFloatingWindow()">🚀 Iniciar Janela Flutuante</button>
             
             <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 15px; text-align: center;">
                 O cronômetro vai flutuar acima do navegador enquanto você faz as questões.
@@ -476,6 +481,23 @@
                 </div>
             </div>
 
+            <!-- NOVAS CORES DO SEMÁFORO PIP -->
+            <div class="setting-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
+                <span class="setting-label" style="color: var(--text-color);">🚦 Cores do Semáforo (PiP Speedrunner)</span>
+                <div class="color-setting">
+                    <input type="color" id="theme-pip-safe" value="#51cf66" onchange="updatePipColors()">
+                    <span>Sobra de Tempo (Verde)</span>
+                </div>
+                <div class="color-setting">
+                    <input type="color" id="theme-pip-warning" value="#fcc419" onchange="updatePipColors()">
+                    <span>No Limite (Amarelo)</span>
+                </div>
+                <div class="color-setting">
+                    <input type="color" id="theme-pip-danger" value="#ff6b6b" onchange="updatePipColors()">
+                    <span>Passou do Tempo (Vermelho)</span>
+                </div>
+            </div>
+
             <div class="setting-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
                 <span class="setting-label" style="color: var(--accent-color);">☁️ Nuvem Assíncrona</span>
                 <input type="text" id="input-bin-id" class="setting-input" style="margin-bottom: 8px;" placeholder="Seu Bin ID (ex: 65a1b...)">
@@ -533,7 +555,7 @@
         }
 
         // ==========================================
-        // PVO SPEEDRUNNER: JANELA CAMALEÃO
+        // PVO SPEEDRUNNER: INTEGRAÇÃO E ALARMES
         // ==========================================
         let pipGlobalLeft = 0;
         let pipCurrentLapTime = 0;
@@ -542,6 +564,8 @@
         let pipInterval;
         let pipTotalQuestions = 0;
         let pipTargetTimePerQuestion = 0;
+        let pipInitialTotalSec = 0;
+        let pipFinished = false;
 
         function updatePipPreview() {
             const t = parseInt(document.getElementById('inp-pip-time').value) || 0;
@@ -556,44 +580,59 @@
             }
         }
 
+        function updatePipColors() {
+            localStorage.setItem(getKey('PipSafe'), document.getElementById('theme-pip-safe').value);
+            localStorage.setItem(getKey('PipWarning'), document.getElementById('theme-pip-warning').value);
+            localStorage.setItem(getKey('PipDanger'), document.getElementById('theme-pip-danger').value);
+            silentCloudSave();
+        }
+
         async function openFloatingWindow() {
             const totalTimeMin = parseInt(document.getElementById('inp-pip-time').value) || 50;
             pipTotalQuestions = parseInt(document.getElementById('inp-pip-q').value) || 10;
-            const totalTimeSec = totalTimeMin * 60;
-            pipTargetTimePerQuestion = Math.floor(totalTimeSec / pipTotalQuestions);
+            pipInitialTotalSec = totalTimeMin * 60;
+            pipTargetTimePerQuestion = Math.floor(pipInitialTotalSec / pipTotalQuestions);
             
-            pipGlobalLeft = totalTimeSec;
+            pipGlobalLeft = pipInitialTotalSec;
             pipCurrentLapTime = 0;
             pipCurrentQ = 1;
             pipHistory = [];
+            pipFinished = false;
 
             if (!('documentPictureInPicture' in window)) {
                 alert("Seu navegador não suporta a janela flutuante nativa (Document PiP). Use Google Chrome ou Edge mais recente no PC.");
                 return;
             }
 
+            // Carrega URL de áudio para o PiP
+            let audioUrl = localStorage.getItem(getKey('AudioUrl')); 
+            if (!audioUrl || audioUrl.trim() === "") audioUrl = 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg';
+            alarmAudio.src = audioUrl; alarmAudio.load();
+
             try {
                 const pipWindow = await documentPictureInPicture.requestWindow({ width: 320, height: 420 });
 
-                // Puxa as cores e fontes reais do seu Pomodoro (O Efeito Camaleão)
+                // HERDA CONFIGS PRINCIPAIS E DO SEMÁFORO
                 const sysBg = localStorage.getItem(getKey('BgColor')) || '#ffffff';
                 const sysText = localStorage.getItem(getKey('TextColor')) || '#37352f';
                 const sysAccent = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
                 const sysFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
                 const sysFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
 
+                const pipSafe = localStorage.getItem(getKey('PipSafe')) || '#51cf66';
+                const pipWarning = localStorage.getItem(getKey('PipWarning')) || '#fcc419';
+                const pipDanger = localStorage.getItem(getKey('PipDanger')) || '#ff6b6b';
+
                 const style = pipWindow.document.createElement('style');
                 style.textContent = `
                     :root {
-                        --pip-bg: ${sysBg};
-                        --pip-text: ${sysText};
-                        --pip-accent: ${sysAccent};
-                        --pip-font-text: ${sysFontText};
-                        --pip-font-timer: ${sysFontTimer};
+                        --pip-bg: ${sysBg}; --pip-text: ${sysText}; --pip-accent: ${sysAccent};
+                        --pip-font-text: ${sysFontText}; --pip-font-timer: ${sysFontTimer};
+                        --pip-safe: ${pipSafe}; --pip-warn: ${pipWarning}; --pip-danger: ${pipDanger};
                     }
                     body { margin: 0; padding: 15px; background: var(--pip-bg); color: var(--pip-text); font-family: var(--pip-font-text); box-sizing: border-box; text-align: center; display: flex; flex-direction: column; height: 100vh; }
                     .header { font-size: 0.75rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
-                    .global-timer { font-family: var(--pip-font-timer); font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--pip-text); }
+                    .global-timer { font-family: var(--pip-font-timer); font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--pip-text); transition: color 0.3s;}
                     .q-counter { font-size: 0.85rem; color: var(--pip-accent); font-weight: bold; margin-bottom: 20px; }
                     
                     .lap-container { background: rgba(125,125,125,0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(125,125,125,0.2); transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
@@ -607,9 +646,9 @@
                     .history-list { font-size: 0.75rem; text-align: left; max-height: 100px; overflow-y: auto; background: rgba(125,125,125,0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(125,125,125,0.2);}
                     .hist-item { display: flex; justify-content: space-between; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed rgba(125,125,125,0.2);}
                     
-                    /* Cores fixas para Status, para garantir a leitura do verde/amarelo/vermelho */
-                    .safe { color: #51cf66; } .warning { color: #fcc419; } .danger { color: #ff6b6b; }
-                    .border-safe { border-color: #51cf66; } .border-warning { border-color: #fcc419; } .border-danger { border-color: #ff6b6b; }
+                    /* Cores Customizáveis do Semáforo */
+                    .safe { color: var(--pip-safe); } .warning { color: var(--pip-warn); } .danger { color: var(--pip-danger); }
+                    .border-safe { border-color: var(--pip-safe); } .border-warning { border-color: var(--pip-warn); } .border-danger { border-color: var(--pip-danger); }
                 `;
                 pipWindow.document.head.appendChild(style);
 
@@ -653,6 +692,34 @@
                     return 'danger';
                 }
 
+                // FUNÇÃO DE FINALIZAÇÃO (SALVA TUDO E TOCA O ALARME)
+                function finishSpeedrunner() {
+                    if (pipFinished) return;
+                    pipFinished = true;
+                    clearInterval(pipInterval);
+                    
+                    btnNext.textContent = "🎉 Simulado Concluído!";
+                    btnNext.disabled = true;
+                    histList.style.display = 'block';
+                    histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
+                    
+                    // Toca o alarme sonoro
+                    alarmAudio.play().catch(e=>{});
+                    
+                    // Integra com a Trilha da Aprovação (Salva no Histórico Principal)
+                    const subj = document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO";
+                    const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
+                    const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
+                    
+                    if (totalElapsed > 60) {
+                        saveToHistory(subj, color, totalElapsed);
+                        silentCloudSave();
+                        setTimeout(() => {
+                            alert(`⏱️ Simulado Encerrado!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nIsso já entrou na sua contagem de Horas Líquidas!`);
+                        }, 500);
+                    }
+                }
+
                 function tick() {
                     if (pipGlobalLeft > 0) pipGlobalLeft--;
                     pipCurrentLapTime++;
@@ -676,25 +743,22 @@
                         lapDiffDisplay.className = 'lap-diff danger';
                     }
 
+                    // Fim do tempo global bateu em ZERO
                     if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
-                        clearInterval(pipInterval);
-                        globalDisplay.style.color = '#ff6b6b';
-                        btnNext.textContent = "Fim do Tempo Geral";
-                        btnNext.disabled = true;
-                        showHistory();
+                        pipGlobalLeft = 0;
+                        globalDisplay.style.color = 'var(--pip-danger)';
+                        finishSpeedrunner();
                     }
                 }
 
                 function nextQuestion() {
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
-                    const statusText = diff >= 0 ? `<span style="color:#51cf66">+${formatTime(diff)}</span>` : `<span style="color:#ff6b6b">-${formatTime(Math.abs(diff))}</span>`;
+                    const statusColor = diff >= 0 ? 'var(--pip-safe)' : 'var(--pip-danger)';
+                    const statusText = `<span style="color:${statusColor}">${diff >= 0 ? '+' : '-'}${formatTime(Math.abs(diff))}</span>`;
                     pipHistory.push(`Q${pipCurrentQ}: ${formatTime(pipCurrentLapTime)} (${statusText})`);
 
                     if (pipCurrentQ >= pipTotalQuestions) {
-                        clearInterval(pipInterval);
-                        btnNext.textContent = "🎉 Simulado Concluído!";
-                        btnNext.disabled = true;
-                        showHistory();
+                        finishSpeedrunner();
                         return;
                     }
 
@@ -705,18 +769,23 @@
                     tick();
                 }
 
-                function showHistory() {
-                    histList.style.display = 'block';
-                    histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
-                }
-
                 btnNext.addEventListener('click', nextQuestion);
                 
                 if (pipInterval) clearInterval(pipInterval);
                 pipInterval = setInterval(tick, 1000);
 
+                // O que fazer se você fechar a janela no meio do simulado:
                 pipWindow.addEventListener("pagehide", () => {
                     clearInterval(pipInterval);
+                    if (!pipFinished) {
+                        const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
+                        if (totalElapsed > 60) { // Só salva se passou de 1 minuto
+                            const subj = document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO";
+                            const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
+                            saveToHistory(subj, color, totalElapsed);
+                            silentCloudSave();
+                        }
+                    }
                 });
 
             } catch (error) {
@@ -750,7 +819,7 @@
             if (!binId || !apiKey) return; setCloudStatus('syncing');
             const payload = {
                 queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [], history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
-                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '' }
+                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '', pipSafe: localStorage.getItem(getKey('PipSafe')) || '#51cf66', pipWarning: localStorage.getItem(getKey('PipWarning')) || '#fcc419', pipDanger: localStorage.getItem(getKey('PipDanger')) || '#ff6b6b' }
             };
             try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
         }
@@ -791,6 +860,9 @@
                     if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong);
                     if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName); 
                     if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate);
+                    if (s.pipSafe) originalSetItem.call(localStorage, getKey('PipSafe'), s.pipSafe);
+                    if (s.pipWarning) originalSetItem.call(localStorage, getKey('PipWarning'), s.pipWarning);
+                    if (s.pipDanger) originalSetItem.call(localStorage, getKey('PipDanger'), s.pipDanger);
                 }
                 
                 sessionStorage.setItem('CloudSynced', 'true'); setCloudStatus('success');
@@ -828,6 +900,10 @@
             document.getElementById('theme-bg-color').value = localStorage.getItem(getKey('BgColor')) || '#ffffff';
             document.getElementById('theme-heatmap-color').value = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
             document.getElementById('theme-bg-opacity').value = localStorage.getItem(getKey('BgOpacity')) || '0.85';
+            
+            document.getElementById('theme-pip-safe').value = localStorage.getItem(getKey('PipSafe')) || '#51cf66';
+            document.getElementById('theme-pip-warning').value = localStorage.getItem(getKey('PipWarning')) || '#fcc419';
+            document.getElementById('theme-pip-danger').value = localStorage.getItem(getKey('PipDanger')) || '#ff6b6b';
 
             const bgUrl = localStorage.getItem(getKey('BgUrl')) || '';
             document.body.style.backgroundImage = bgUrl.trim() !== "" ? `url('${bgUrl}')` : 'none';
