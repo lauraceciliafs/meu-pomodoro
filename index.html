@@ -777,7 +777,7 @@
             }
         }
 
-        // GITHUB STYLE HEATMAP (PRIORIDADE ABSOLUTA PARA O MÊS DE INÍCIO)
+        // GITHUB STYLE HEATMAP (MOSTRA TODOS OS MESES LADO A LADO)
         function renderHeatmap() {
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             let dailyMins = {}; let totalMins = 0; let earliestDate = null;
@@ -870,19 +870,21 @@
                 heatmapGrid.appendChild(cell); iterDate.setDate(iterDate.getDate() + 1);
             }
             
-            // Lógica fina para garantir que o primeiro mês apareça sempre:
+            // Lógica fina para MOSTRAR TODOS OS MESES SEM SOBREPOR:
             let monthsHtml = '';
-            let lastRenderedCol = -10; // Começa longe
+            let lastRenderedLeft = -50; 
             
             for (let i = 0; i < monthLabels.length; i++) {
                 let m = monthLabels[i];
-                // Se for a primeira anotação ou a distância para a anterior for segura (3 colunas)
-                if (m.col - lastRenderedCol >= 3) {
-                    let leftPos = m.col * 13; 
-                    let mName = m.name.charAt(0).toUpperCase() + m.name.slice(1);
-                    monthsHtml += `<span class="heatmap-month-label" style="left: ${leftPos}px">${mName}</span>`;
-                    lastRenderedCol = m.col;
-                }
+                let idealLeft = m.col * 13; 
+                
+                // Se a posição ideal bater na palavra anterior, empurra um pouquinho pra direita (25 pixels de margem de segurança)
+                let actualLeft = Math.max(idealLeft, lastRenderedLeft + 25);
+                
+                let mName = m.name.charAt(0).toUpperCase() + m.name.slice(1);
+                monthsHtml += `<span class="heatmap-month-label" style="left: ${actualLeft}px">${mName}</span>`;
+                
+                lastRenderedLeft = actualLeft;
             }
             heatmapMonths.innerHTML = monthsHtml;
         }
