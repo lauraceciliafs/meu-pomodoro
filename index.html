@@ -851,8 +851,8 @@
                 } else if (iterDate > today) {
                     cell.style.backgroundColor = 'rgba(125,125,125,0.05)';
                     cell.style.border = '1px dashed rgba(125,125,125,0.2)';
-                    let diff = Math.ceil((iterDate - today) / (1000 * 60 * 60 * 24));
-                    cell.title = `${iterDate.toLocaleDateString('pt-BR')}: Faltam ${diff} dias`;
+                    let diff = Math.ceil((examDateObj - iterDate) / (1000 * 60 * 60 * 24));
+                    cell.title = `${iterDate.toLocaleDateString('pt-BR')}: Faltam ${diff} dias para a prova`;
                 } else {
                     let mins = dailyMins[iso] || 0;
                     if(mins > 0) {
