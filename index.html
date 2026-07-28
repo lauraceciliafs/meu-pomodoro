@@ -250,7 +250,6 @@
     <div class="pomodoro-card">
         <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
         <button class="top-btn stats-toggle" onclick="toggleStats()" title="Gráficos de Estudo">📈</button>
-        <!-- NOVO BOTÃO SPEEDRUNNER -->
         <button class="top-btn speedrunner-toggle" onclick="toggleSpeedrunner()" title="Bolsa de Minutos (Provas)">🎯</button>
         
         <div class="cloud-status-indicator" id="cloud-indicator" title="Status da Sincronização">☁️ <span id="cloud-text">Local</span></div>
@@ -298,7 +297,7 @@
             </div>
         </div>
 
-        <!-- NOVO PAINEL: PVO SPEEDRUNNER -->
+        <!-- PAINEL: PVO SPEEDRUNNER -->
         <div class="overlay-panel" id="speedrunner-panel">
             <div class="panel-header">
                 <span class="panel-title">PVO Speedrunner</span>
@@ -306,7 +305,7 @@
             </div>
             
             <p style="font-size: 0.8rem; color: var(--text-color); opacity: 0.8; margin-top: 0; margin-bottom: 20px;">
-                Crie uma janela flutuante para a sua prova e administre sua Bolsa de Minutos.
+                Crie uma janela flutuante com as <b>cores do seu painel</b> para administrar sua Bolsa de Minutos.
             </p>
             
             <div class="setting-group flex-row">
@@ -324,10 +323,10 @@
                 Alvo: <strong>05:00</strong> por questão.
             </div>
             
-            <button class="main-btn" style="width: 100%; border-color: var(--accent-color); font-weight: bold; background: var(--accent-color); color: #fff;" onclick="openFloatingWindow()">🚀 Abrir Painel Flutuante (PiP)</button>
+            <button class="main-btn" style="width: 100%; border-color: var(--text-color); font-weight: bold; background: var(--text-color); color: var(--bg-card);" onclick="openFloatingWindow()">🚀 Abrir Janela Flutuante</button>
             
             <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 15px; text-align: center;">
-                Requer Chrome ou Edge atualizado no PC. O painel ficará sobreposto a qualquer site.
+                O cronômetro vai flutuar acima do navegador enquanto você faz as questões.
             </p>
         </div>
 
@@ -534,7 +533,7 @@
         }
 
         // ==========================================
-        // PVO SPEEDRUNNER LÓGICA (NOVO)
+        // PVO SPEEDRUNNER: JANELA CAMALEÃO
         // ==========================================
         let pipGlobalLeft = 0;
         let pipCurrentLapTime = 0;
@@ -576,26 +575,41 @@
             try {
                 const pipWindow = await documentPictureInPicture.requestWindow({ width: 320, height: 420 });
 
+                // Puxa as cores e fontes reais do seu Pomodoro (O Efeito Camaleão)
+                const sysBg = localStorage.getItem(getKey('BgColor')) || '#ffffff';
+                const sysText = localStorage.getItem(getKey('TextColor')) || '#37352f';
+                const sysAccent = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
+                const sysFontText = localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif";
+                const sysFontTimer = localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif";
+
                 const style = pipWindow.document.createElement('style');
                 style.textContent = `
-                    body { margin: 0; padding: 15px; background: #121212; color: #f0f0f0; font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; text-align: center; display: flex; flex-direction: column; height: 100vh; }
-                    .header { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
-                    .global-timer { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; margin: 0; color: #f0f0f0; }
-                    .q-counter { font-size: 0.85rem; color: #ff6b6b; font-weight: bold; margin-bottom: 20px; }
+                    :root {
+                        --pip-bg: ${sysBg};
+                        --pip-text: ${sysText};
+                        --pip-accent: ${sysAccent};
+                        --pip-font-text: ${sysFontText};
+                        --pip-font-timer: ${sysFontTimer};
+                    }
+                    body { margin: 0; padding: 15px; background: var(--pip-bg); color: var(--pip-text); font-family: var(--pip-font-text); box-sizing: border-box; text-align: center; display: flex; flex-direction: column; height: 100vh; }
+                    .header { font-size: 0.75rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+                    .global-timer { font-family: var(--pip-font-timer); font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--pip-text); }
+                    .q-counter { font-size: 0.85rem; color: var(--pip-accent); font-weight: bold; margin-bottom: 20px; }
                     
-                    .lap-container { background: #1e1e1e; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #333; transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
-                    .lap-title { font-size: 0.75rem; color: #888; margin-bottom: 5px; }
-                    .lap-timer { font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 700; margin: 0; transition: color 0.3s; }
+                    .lap-container { background: rgba(125,125,125,0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(125,125,125,0.2); transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
+                    .lap-title { font-size: 0.75rem; opacity: 0.7; margin-bottom: 5px; }
+                    .lap-timer { font-family: var(--pip-font-timer); font-size: 3.5rem; font-weight: 700; margin: 0; transition: color 0.3s; }
                     .lap-diff { font-size: 0.8rem; font-weight: bold; margin-top: 5px; min-height: 15px;}
                     
-                    .btn-next { background: #f0f0f0; color: #000; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s; margin-bottom: 10px;}
+                    .btn-next { background: var(--pip-text); color: var(--pip-bg); border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-family: var(--pip-font-text); font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s; margin-bottom: 10px;}
                     .btn-next:active { transform: scale(0.96); }
                     
-                    .history-list { font-size: 0.75rem; text-align: left; max-height: 100px; overflow-y: auto; background: #1e1e1e; border-radius: 8px; padding: 10px; border: 1px solid #333;}
-                    .hist-item { display: flex; justify-content: space-between; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #333;}
+                    .history-list { font-size: 0.75rem; text-align: left; max-height: 100px; overflow-y: auto; background: rgba(125,125,125,0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(125,125,125,0.2);}
+                    .hist-item { display: flex; justify-content: space-between; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed rgba(125,125,125,0.2);}
                     
-                    .safe { color: #8ce99a; } .warning { color: #fcc419; } .danger { color: #ff6b6b; }
-                    .border-safe { border-color: #8ce99a; } .border-warning { border-color: #fcc419; } .border-danger { border-color: #ff6b6b; }
+                    /* Cores fixas para Status, para garantir a leitura do verde/amarelo/vermelho */
+                    .safe { color: #51cf66; } .warning { color: #fcc419; } .danger { color: #ff6b6b; }
+                    .border-safe { border-color: #51cf66; } .border-warning { border-color: #fcc419; } .border-danger { border-color: #ff6b6b; }
                 `;
                 pipWindow.document.head.appendChild(style);
 
@@ -673,7 +687,7 @@
 
                 function nextQuestion() {
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
-                    const statusText = diff >= 0 ? `<span style="color:#8ce99a">+${formatTime(diff)}</span>` : `<span style="color:#ff6b6b">-${formatTime(Math.abs(diff))}</span>`;
+                    const statusText = diff >= 0 ? `<span style="color:#51cf66">+${formatTime(diff)}</span>` : `<span style="color:#ff6b6b">-${formatTime(Math.abs(diff))}</span>`;
                     pipHistory.push(`Q${pipCurrentQ}: ${formatTime(pipCurrentLapTime)} (${statusText})`);
 
                     if (pipCurrentQ >= pipTotalQuestions) {
