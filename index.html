@@ -183,28 +183,59 @@
         .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
         .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
 
-        /* HEATMAP DYNAMIC - GITHUB STYLE */
+        /* HEATMAP DYNAMIC - GITHUB STYLE FIXADO */
         .stats-divider { margin: 24px 0 16px 0; border-top: 1px dashed var(--border-color); position: relative; }
         .stats-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-card); padding: 0 10px; font-size: 0.7rem; font-weight: 600; opacity: 0.7; white-space: nowrap;}
         
-        .heatmap-outer { width: 100%; overflow-x: auto; overflow-y: hidden; direction: rtl; margin-top: 15px; }
+        .heatmap-outer { 
+            width: 100%; 
+            overflow-x: auto; 
+            overflow-y: hidden; 
+            margin-top: 15px; 
+            text-align: center; /* Centraliza o inner se for pequeno */
+            scroll-behavior: smooth;
+        }
         .heatmap-outer::-webkit-scrollbar { height: 4px; }
         .heatmap-outer::-webkit-scrollbar-thumb { background: rgba(125, 125, 125, 0.2); border-radius: 4px; }
         
-        .heatmap-inner { display: flex; flex-direction: column; direction: ltr; padding-bottom: 8px; width: max-content; }
+        .heatmap-inner { 
+            display: inline-flex; 
+            flex-direction: column; 
+            padding-bottom: 8px; 
+            text-align: left;
+            margin: 0 auto; 
+        }
         
-        .heatmap-months { position: relative; height: 16px; margin-left: 24px; font-size: 0.65rem; font-weight: 600; opacity: 0.6; }
+        .heatmap-months { 
+            position: relative; 
+            height: 16px; 
+            margin-left: 28px; /* Alinhamento exato com a grade que vem depois das letras dos dias */
+            font-size: 0.65rem; 
+            font-weight: 600; 
+            opacity: 0.6; 
+        }
         .heatmap-month-label { position: absolute; text-transform: capitalize; }
         
-        .heatmap-body { display: flex; gap: 6px; }
+        .heatmap-body { display: flex; gap: 6px; align-items: flex-start; }
         
-        .heatmap-days { display: grid; grid-template-rows: repeat(7, 10px); gap: 3px; font-size: 0.55rem; font-weight: 600; opacity: 0.5; text-align: right; line-height: 10px; padding-top: 1px; }
+        /* Centralização perfeita das letras "Seg", "Qua", "Sex" */
+        .heatmap-days { 
+            display: grid; 
+            grid-template-rows: repeat(7, 10px); 
+            gap: 3px; 
+            font-size: 0.55rem; 
+            font-weight: 600; 
+            opacity: 0.5; 
+            text-align: right; 
+            align-items: center; /* Centraliza o texto no quadrado exato de 10px */
+            width: 22px; /* Largura fixa para alinhar a margem do mês */
+        }
         
         .heatmap-grid { display: grid; grid-template-rows: repeat(7, 10px); grid-auto-flow: column; gap: 3px; }
         .heatmap-cell { width: 10px; height: 10px; border-radius: 2px; background: rgba(125,125,125,0.15); transition: transform 0.1s; cursor: pointer; }
         .heatmap-cell:hover { transform: scale(1.3); z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 1px solid var(--text-color); }
         
-        .heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; opacity: 0.7; margin-top: 8px; justify-content: flex-end; }
+        .heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; opacity: 0.7; margin-top: 10px; justify-content: flex-end; }
         
         .stats-bottom-row { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 0 5px; }
         .hm-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
@@ -292,7 +323,8 @@
 
             <div class="stats-divider"><span>Trilha da Aprovação</span></div>
 
-            <div class="heatmap-outer">
+            <!-- GitHub Style Heatmap Centrado -->
+            <div class="heatmap-outer" id="heatmap-outer">
                 <div class="heatmap-inner">
                     <div class="heatmap-months" id="heatmap-months"></div>
                     <div class="heatmap-body">
@@ -301,17 +333,16 @@
                         </div>
                         <div class="heatmap-grid" id="heatmap-grid"></div>
                     </div>
+                    <div class="heatmap-legend">
+                        <span style="margin-right: 4px;">Menos</span>
+                        <div class="heatmap-cell" style="background: rgba(125,125,125,0.15)"></div>
+                        <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.3)"></div>
+                        <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.55)"></div>
+                        <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.8)"></div>
+                        <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 1)"></div>
+                        <span style="margin-left: 4px;">Mais</span>
+                    </div>
                 </div>
-            </div>
-
-            <div class="heatmap-legend">
-                <span style="margin-right: 4px;">Menos</span>
-                <div class="heatmap-cell" style="background: rgba(125,125,125,0.15)"></div>
-                <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.3)"></div>
-                <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.55)"></div>
-                <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 0.8)"></div>
-                <div class="heatmap-cell" style="background: rgba(var(--heatmap-color), 1)"></div>
-                <span style="margin-left: 4px;">Mais</span>
             </div>
 
             <div class="stats-bottom-row">
@@ -425,7 +456,6 @@
         const widgetId = urlParams.get('id') || '';
         function getKey(name) { return 'pomodoro' + name + (widgetId ? '_' + widgetId : ''); }
 
-        // Variáveis do Sistema
         let targetEndTime = 0; let timerStartTime = 0; let isRunning = false;
         let timeLeft = 0; let cronoTime = 0; let totalSecondsCurrent = 0;
         let blocksQueue = JSON.parse(localStorage.getItem(getKey('Queue'))) || [];
@@ -433,14 +463,12 @@
         let editingBlockIndex = -1; let deletingBlockIndex = -1; let editingHistoryItem = null; 
         let shortBreakColor = '#8ce99a'; let longBreakColor = '#74c0fc';
 
-        // Worker do Tempo (Imune a Tela Desligada)
         const workerScript = `let interval; self.onmessage = function(e) { if (e.data === 'start') { interval = setInterval(() => self.postMessage('tick'), 1000); } else if (e.data === 'stop') { clearInterval(interval); } };`;
         const timerWorker = new Worker(URL.createObjectURL(new Blob([workerScript], { type: 'application/javascript' })));
         timerWorker.onmessage = function() { countdown(); };
         function startInterval() { timerWorker.postMessage('start'); }
         function stopInterval() { timerWorker.postMessage('stop'); }
 
-        // Elementos UI
         const display = document.getElementById('timer-display'); const startBtn = document.getElementById('start-btn');
         const subjectDisplay = document.getElementById('current-subject-display'); const progressBar = document.getElementById('progress-bar');
         const settingsPanel = document.getElementById('settings-panel'); const historyPanel = document.getElementById('history-panel');
@@ -464,16 +492,13 @@
             return `${r}, ${g}, ${b}`;
         }
 
-        // ==========================================
-        // SISTEMA DE NUVEM (ATUALIZADO SEM F5 ABRUPTO)
-        // ==========================================
         function updateCloudCredentials() {
             const btn = document.getElementById('btn-conectar-nuvem');
             if(btn) btn.textContent = '⏳ Conectando e baixando dados...';
             localStorage.setItem(getKey('BinId'), inputBinId.value.trim());
             localStorage.setItem(getKey('MasterKey'), inputMasterKey.value.trim());
             sessionStorage.removeItem('CloudSynced');
-            autoCloudLoad(true); // isManual = true
+            autoCloudLoad(true);
         }
 
         function setCloudStatus(status) {
@@ -481,6 +506,16 @@
             if (status === 'syncing') { cloudIndicator.classList.add('syncing'); cloudText.textContent = 'Sincronizando...'; } 
             else if (status === 'success') { cloudIndicator.style.color = 'var(--accent-color)'; cloudText.textContent = 'Salvo na Nuvem'; setTimeout(() => { cloudIndicator.style.color = ''; cloudText.textContent = 'Nuvem'; }, 3000); } 
             else if (status === 'error') { cloudIndicator.style.color = '#ff6b6b'; cloudText.textContent = 'Erro de Sinc'; }
+        }
+
+        async function silentCloudSave() {
+            const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
+            if (!binId || !apiKey) return; setCloudStatus('syncing');
+            const payload = {
+                queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [], history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
+                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '' }
+            };
+            try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
         }
 
         async function autoCloudLoad(isManual = false) {
@@ -500,7 +535,7 @@
                 
                 if (record.queue) {
                     originalSetItem.call(localStorage, getKey('Queue'), JSON.stringify(record.queue));
-                    blocksQueue = record.queue; // Atualiza a variável local
+                    blocksQueue = record.queue; 
                 }
                 if (record.history) originalSetItem.call(localStorage, getKey('History'), JSON.stringify(record.history));
                 if (record.settings) {
@@ -526,15 +561,13 @@
                 if(isManual && btn) {
                     btn.textContent = '✅ Sucesso! Painel Atualizado.';
                     btn.style.backgroundColor = 'var(--text-color)'; btn.style.color = 'var(--bg-card)';
-                    
-                    applySettingsToUI(); // Atualiza a tela inteira sem fechar as configurações!
-                    
+                    applySettingsToUI(); 
                     setTimeout(() => {
                         btn.textContent = '☁️ Conectar e Puxar Dados';
                         btn.style.backgroundColor = 'transparent'; btn.style.color = 'var(--text-color)';
                     }, 3000);
                 } else {
-                    location.reload(); // Só recarrega se for o loading automático de quando abre o Notion
+                    location.reload(); 
                 }
             } catch(e) { 
                 setCloudStatus('error'); 
@@ -546,7 +579,6 @@
         }
 
         function applySettingsToUI() {
-            // Atualiza os inputs do menu de configurações
             document.getElementById('input-exam-name').value = localStorage.getItem(getKey('ExamName')) || '';
             document.getElementById('input-exam-date').value = localStorage.getItem(getKey('ExamDate')) || '';
             document.getElementById('input-break-short').value = localStorage.getItem(getKey('BreakShort')) || '5';
@@ -560,7 +592,6 @@
             document.getElementById('theme-heatmap-color').value = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
             document.getElementById('theme-bg-opacity').value = localStorage.getItem(getKey('BgOpacity')) || '0.85';
 
-            // Aplica Cores e Fontes na tela
             const bgUrl = localStorage.getItem(getKey('BgUrl')) || '';
             document.body.style.backgroundImage = bgUrl.trim() !== "" ? `url('${bgUrl}')` : 'none';
             document.documentElement.style.setProperty('--text-color', localStorage.getItem(getKey('TextColor')) || '#37352f');
@@ -580,7 +611,6 @@
             document.documentElement.style.setProperty('--font-text', localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif");
             document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
 
-            // Atualiza os componentes do painel
             updateExamCountdown();
             calculateNetHoursToday();
             renderBlocksList();
@@ -594,16 +624,6 @@
             }
         }
 
-        async function silentCloudSave() {
-            const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
-            if (!binId || !apiKey) return; setCloudStatus('syncing');
-            const payload = {
-                queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [], history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
-                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '' }
-            };
-            try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
-        }
-
         const originalSetItem = localStorage.setItem; let autoSaveTimeout;
         localStorage.setItem = function(key, value) {
             originalSetItem.apply(this, arguments); 
@@ -612,76 +632,33 @@
         };
         
         window.addEventListener('load', () => {
-            // Mantém as chaves na tela quando você entra
             document.getElementById('input-bin-id').value = localStorage.getItem(getKey('BinId')) || '';
             document.getElementById('input-master-key').value = localStorage.getItem(getKey('MasterKey')) || '';
             autoCloudLoad();
         });
 
-        // ==========================================
-        // RENDER DA LISTA DE BLOCOS (O QUE HAVIA SUMIDO)
-        // ==========================================
         function renderBlocksList() {
             blocksListContainer.innerHTML = '';
             if (!blocksQueue || blocksQueue.length === 0) {
-                emptyMsg.style.display = 'block';
-                blocksListContainer.appendChild(emptyMsg);
-                return;
+                emptyMsg.style.display = 'block'; blocksListContainer.appendChild(emptyMsg); return;
             }
             emptyMsg.style.display = 'none';
-            
             blocksQueue.forEach((block, index) => {
-                const item = document.createElement('div');
-                item.className = 'block-item';
-                if (index === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono')) {
-                    item.classList.add('current-active');
-                }
-                
+                const item = document.createElement('div'); item.className = 'block-item';
+                if (index === currentBlockIndex && (currentMode === 'foco' || currentMode === 'crono')) { item.classList.add('current-active'); }
                 if (editingBlockIndex === index) {
-                    item.innerHTML = `
-                        <div style="display:flex; gap:6px; width:100%; align-items:center;">
-                            <input type="text" id="edit-subj-${index}" class="inline-input" value="${block.subject}" style="flex-grow:1;">
-                            <div class="color-wrapper" style="width:24px; height:24px; border-radius:6px; flex-shrink:0;">
-                                <input type="color" id="edit-color-${index}" value="${block.color}" style="width:32px; height:32px; border:none; padding:0;">
-                            </div>
-                            <input type="number" id="edit-time-${index}" class="inline-input time" value="${Math.floor(block.duration / 60)}" min="1">
-                            <button class="action-btn" onclick="saveEdit(${index})">✅</button>
-                            <button class="action-btn" onclick="cancelEdit()">❌</button>
-                        </div>
-                    `;
+                    item.innerHTML = `<div style="display:flex; gap:6px; width:100%; align-items:center;"><input type="text" id="edit-subj-${index}" class="inline-input" value="${block.subject}" style="flex-grow:1;"><div class="color-wrapper" style="width:24px; height:24px; border-radius:6px; flex-shrink:0;"><input type="color" id="edit-color-${index}" value="${block.color}" style="width:32px; height:32px; border:none; padding:0;"></div><input type="number" id="edit-time-${index}" class="inline-input time" value="${Math.floor(block.duration / 60)}" min="1"><button class="action-btn" onclick="saveEdit(${index})">✅</button><button class="action-btn" onclick="cancelEdit()">❌</button></div>`;
                 } else if (deletingBlockIndex === index) {
-                    item.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; width:100%; align-items:center; background:rgba(255,107,107,0.1); padding:4px 8px; border-radius:6px; border: 1px dashed var(--accent-color);">
-                            <span style="font-size:0.75rem; font-weight:600; color:var(--accent-color);">Excluir bloco?</span>
-                            <div style="display:flex; gap:10px;">
-                                <button class="action-btn" onclick="confirmDelete(${index})">✅</button>
-                                <button class="action-btn" onclick="cancelDelete()">❌</button>
-                            </div>
-                        </div>
-                    `;
+                    item.innerHTML = `<div style="display:flex; justify-content:space-between; width:100%; align-items:center; background:rgba(255,107,107,0.1); padding:4px 8px; border-radius:6px; border: 1px dashed var(--accent-color);"><span style="font-size:0.75rem; font-weight:600; color:var(--accent-color);">Excluir bloco?</span><div style="display:flex; gap:10px;"><button class="action-btn" onclick="confirmDelete(${index})">✅</button><button class="action-btn" onclick="cancelDelete()">❌</button></div></div>`;
                 } else {
                     let durationStr = block.remainingTime ? `${Math.ceil(block.remainingTime / 60)}m restando` : `${Math.floor(block.duration / 60)}m`;
                     if (block.completed) durationStr = "✅ Concluído";
-                    item.innerHTML = `
-                        <div class="block-dot" style="background-color: ${block.color}; opacity: ${block.completed ? '0.3' : '1'};"></div>
-                        <div class="block-info-wrapper">
-                            <div class="block-text-group" style="opacity: ${block.completed ? '0.5' : '1'};">
-                                <span class="block-name" style="${block.completed ? 'text-decoration: line-through;' : ''}">${block.subject}</span>
-                                <span class="block-duration">${durationStr}</span>
-                            </div>
-                            <div class="block-actions">
-                                <button class="action-btn" onclick="playBlock(${index})" title="Estudar este">▶️</button>
-                                <button class="action-btn" onclick="startEdit(${index})" title="Editar">✏️</button>
-                                <button class="action-btn" onclick="startDelete(${index})" title="Apagar">✖</button>
-                            </div>
-                        </div>
-                    `;
+                    item.innerHTML = `<div class="block-dot" style="background-color: ${block.color}; opacity: ${block.completed ? '0.3' : '1'};"></div><div class="block-info-wrapper"><div class="block-text-group" style="opacity: ${block.completed ? '0.5' : '1'};"><span class="block-name" style="${block.completed ? 'text-decoration: line-through;' : ''}">${block.subject}</span><span class="block-duration">${durationStr}</span></div><div class="block-actions"><button class="action-btn" onclick="playBlock(${index})" title="Estudar este">▶️</button><button class="action-btn" onclick="startEdit(${index})" title="Editar">✏️</button><button class="action-btn" onclick="startDelete(${index})" title="Apagar">✖</button></div></div>`;
                 }
                 blocksListContainer.appendChild(item);
             });
         }
 
-        // Outros Métodos Essenciais
         function saveQueue() { localStorage.setItem(getKey('Queue'), JSON.stringify(blocksQueue)); }
         function saveTimerState() { const state = { currentMode, currentBlockIndex, completedFocosCount, isRunning, targetEndTime, timerStartTime, timeLeft, cronoTime }; localStorage.setItem(getKey('TimerState'), JSON.stringify(state)); }
 
@@ -757,7 +734,20 @@
         function hideTimerElements(hide) { document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1'; document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8'; document.getElementById('main-controls').style.opacity = hide ? '0' : '1'; }
         function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(historyPanel.classList.contains('open')); }
         function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(settingsPanel.classList.contains('open')); }
-        function toggleStats() { if (!statsPanel.classList.contains('open')) { renderStats('hoje'); renderHeatmap(); } statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); hideTimerElements(statsPanel.classList.contains('open')); }
+        
+        // EFEITO DO SCROLL SUAVE PARA MOSTRAR OS QUADRADINHOS DO FIM
+        function toggleStats() { 
+            if (!statsPanel.classList.contains('open')) { 
+                renderStats('hoje'); 
+                renderHeatmap(); 
+                // Dá um tempinho minúsculo pro navegador desenhar e rola a tela:
+                setTimeout(() => {
+                    const scrollBox = document.getElementById('heatmap-outer');
+                    if (scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth;
+                }, 50);
+            } 
+            statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); hideTimerElements(statsPanel.classList.contains('open')); 
+        }
 
         function renderStats(period) {
             document.getElementById('btn-stat-hoje').classList.remove('active'); document.getElementById('btn-stat-semana').classList.remove('active'); document.getElementById('btn-stat-todos').classList.remove('active'); document.getElementById(`btn-stat-${period}`).classList.add('active');
@@ -790,7 +780,6 @@
             }
         }
 
-        // GITHUB STYLE HEATMAP DYNAMIC
         function renderHeatmap() {
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             let dailyMins = {}; let totalMins = 0; let earliestDate = null;
@@ -846,11 +835,12 @@
             let iterDate = new Date(startDate);
             while(iterDate <= finalEndDate) {
                 
-                // Labels de Mês (Posicionados sobre o grid)
+                // MÁGICA DOS MESES SEM EMBOLAR:
                 if (iterDate.getDay() === 0) {
                     if (iterDate.getMonth() !== lastMonth) {
                         let leftPos = colIndex * 13; // 10px largura + 3px gap
                         let mName = iterDate.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
+                        mName = mName.charAt(0).toUpperCase() + mName.slice(1); // Força a 1ª letra a ser Maiúscula
                         monthsHtml += `<span class="heatmap-month-label" style="left: ${leftPos}px">${mName}</span>`;
                         lastMonth = iterDate.getMonth();
                     }
