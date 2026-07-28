@@ -48,6 +48,7 @@
         }
         .top-btn:hover { opacity: 1; transform: scale(1.1); }
         .settings-toggle { right: 16px; } .settings-toggle:hover { transform: rotate(45deg); }
+        .speedrunner-toggle { right: 48px; }
         .history-toggle { left: 16px; }
         .stats-toggle { left: 48px; }
 
@@ -172,10 +173,11 @@
         .clear-history-btn { width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
         .clear-history-btn:hover { background: var(--accent-color); color: #fff; }
 
-        /* SETTINGS TAB */
+        /* SETTINGS TAB E PIP */
         .setting-group { margin-bottom: 16px; }
         .setting-label { font-size: 0.75rem; font-weight: 600; opacity: 0.8; display: block; margin-bottom: 6px; }
-        .setting-input { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text); box-sizing: border-box; outline: none; }
+        .setting-input { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; padding: 8px; font-size: 0.75rem; font-family: var(--font-text); box-sizing: border-box; outline: none; transition: border 0.2s; }
+        .setting-input:focus { border-color: var(--text-color); }
         .setting-input option { background: var(--bg-card); color: var(--text-color); }
         .flex-row { display: flex; gap: 10px; } .flex-row > div { flex: 1; }
         .color-setting { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -183,7 +185,7 @@
         .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
         .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
 
-        /* HEATMAP DYNAMIC - GITHUB STYLE FIXADO ESPAÇAMENTO E MESES */
+        /* HEATMAP DYNAMIC */
         .stats-divider { margin: 75px 0 25px 0; border-top: 1px dashed var(--border-color); position: relative; }
         .stats-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-card); padding: 0 10px; font-size: 0.7rem; font-weight: 600; opacity: 0.7; white-space: nowrap;}
         
@@ -248,6 +250,9 @@
     <div class="pomodoro-card">
         <button class="top-btn history-toggle" onclick="toggleHistory()" title="Ver Histórico">📊</button>
         <button class="top-btn stats-toggle" onclick="toggleStats()" title="Gráficos de Estudo">📈</button>
+        <!-- NOVO BOTÃO SPEEDRUNNER -->
+        <button class="top-btn speedrunner-toggle" onclick="toggleSpeedrunner()" title="Bolsa de Minutos (Provas)">🎯</button>
+        
         <div class="cloud-status-indicator" id="cloud-indicator" title="Status da Sincronização">☁️ <span id="cloud-text">Local</span></div>
         <button class="top-btn settings-toggle" onclick="toggleSettings()" title="Configurações">⚙️</button>
 
@@ -293,6 +298,39 @@
             </div>
         </div>
 
+        <!-- NOVO PAINEL: PVO SPEEDRUNNER -->
+        <div class="overlay-panel" id="speedrunner-panel">
+            <div class="panel-header">
+                <span class="panel-title">PVO Speedrunner</span>
+                <button class="close-panel" onclick="toggleSpeedrunner()">✖</button>
+            </div>
+            
+            <p style="font-size: 0.8rem; color: var(--text-color); opacity: 0.8; margin-top: 0; margin-bottom: 20px;">
+                Crie uma janela flutuante para a sua prova e administre sua Bolsa de Minutos.
+            </p>
+            
+            <div class="setting-group flex-row">
+                <div>
+                    <span class="setting-label">Minutos Totais</span>
+                    <input type="number" id="inp-pip-time" class="setting-input" value="50" min="1" oninput="updatePipPreview()">
+                </div>
+                <div>
+                    <span class="setting-label">Qtd Questões</span>
+                    <input type="number" id="inp-pip-q" class="setting-input" value="10" min="1" oninput="updatePipPreview()">
+                </div>
+            </div>
+            
+            <div id="pip-calc-preview" style="background: rgba(125,125,125,0.05); border: 1px dashed var(--accent-color); padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;">
+                Alvo: <strong>05:00</strong> por questão.
+            </div>
+            
+            <button class="main-btn" style="width: 100%; border-color: var(--accent-color); font-weight: bold; background: var(--accent-color); color: #fff;" onclick="openFloatingWindow()">🚀 Abrir Painel Flutuante (PiP)</button>
+            
+            <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 15px; text-align: center;">
+                Requer Chrome ou Edge atualizado no PC. O painel ficará sobreposto a qualquer site.
+            </p>
+        </div>
+
         <div class="overlay-panel" id="history-panel">
             <div class="panel-header">
                 <span class="panel-title">Histórico de Estudos</span>
@@ -322,7 +360,6 @@
 
             <div class="stats-divider"><span>Trilha da Aprovação</span></div>
 
-            <!-- GitHub Style Heatmap Centrado e Mais Espaçado -->
             <div class="heatmap-outer" id="heatmap-outer">
                 <div class="heatmap-inner">
                     <div class="heatmap-months" id="heatmap-months"></div>
@@ -470,8 +507,13 @@
 
         const display = document.getElementById('timer-display'); const startBtn = document.getElementById('start-btn');
         const subjectDisplay = document.getElementById('current-subject-display'); const progressBar = document.getElementById('progress-bar');
-        const settingsPanel = document.getElementById('settings-panel'); const historyPanel = document.getElementById('history-panel');
-        const historyContent = document.getElementById('history-content'); const statsPanel = document.getElementById('stats-panel');
+        
+        const settingsPanel = document.getElementById('settings-panel'); 
+        const historyPanel = document.getElementById('history-panel');
+        const statsPanel = document.getElementById('stats-panel');
+        const speedrunnerPanel = document.getElementById('speedrunner-panel');
+        
+        const historyContent = document.getElementById('history-content'); 
         let myChart = null; 
         
         const blocksListContainer = document.getElementById('blocks-list'); const emptyMsg = document.getElementById('empty-msg');
@@ -491,6 +533,188 @@
             return `${r}, ${g}, ${b}`;
         }
 
+        // ==========================================
+        // PVO SPEEDRUNNER LÓGICA (NOVO)
+        // ==========================================
+        let pipGlobalLeft = 0;
+        let pipCurrentLapTime = 0;
+        let pipCurrentQ = 1;
+        let pipHistory = [];
+        let pipInterval;
+        let pipTotalQuestions = 0;
+        let pipTargetTimePerQuestion = 0;
+
+        function updatePipPreview() {
+            const t = parseInt(document.getElementById('inp-pip-time').value) || 0;
+            const q = parseInt(document.getElementById('inp-pip-q').value) || 0;
+            if (t > 0 && q > 0) {
+                const secPerQ = Math.floor((t * 60) / q);
+                const m = Math.floor(secPerQ / 60).toString().padStart(2, '0');
+                const s = (secPerQ % 60).toString().padStart(2, '0');
+                document.getElementById('pip-calc-preview').innerHTML = `Alvo: <strong>${m}:${s}</strong> por questão.`;
+            } else {
+                document.getElementById('pip-calc-preview').innerHTML = `Preencha os dados corretamente.`;
+            }
+        }
+
+        async function openFloatingWindow() {
+            const totalTimeMin = parseInt(document.getElementById('inp-pip-time').value) || 50;
+            pipTotalQuestions = parseInt(document.getElementById('inp-pip-q').value) || 10;
+            const totalTimeSec = totalTimeMin * 60;
+            pipTargetTimePerQuestion = Math.floor(totalTimeSec / pipTotalQuestions);
+            
+            pipGlobalLeft = totalTimeSec;
+            pipCurrentLapTime = 0;
+            pipCurrentQ = 1;
+            pipHistory = [];
+
+            if (!('documentPictureInPicture' in window)) {
+                alert("Seu navegador não suporta a janela flutuante nativa (Document PiP). Use Google Chrome ou Edge mais recente no PC.");
+                return;
+            }
+
+            try {
+                const pipWindow = await documentPictureInPicture.requestWindow({ width: 320, height: 420 });
+
+                const style = pipWindow.document.createElement('style');
+                style.textContent = `
+                    body { margin: 0; padding: 15px; background: #121212; color: #f0f0f0; font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; text-align: center; display: flex; flex-direction: column; height: 100vh; }
+                    .header { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; }
+                    .global-timer { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; margin: 0; color: #f0f0f0; }
+                    .q-counter { font-size: 0.85rem; color: #ff6b6b; font-weight: bold; margin-bottom: 20px; }
+                    
+                    .lap-container { background: #1e1e1e; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #333; transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
+                    .lap-title { font-size: 0.75rem; color: #888; margin-bottom: 5px; }
+                    .lap-timer { font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 700; margin: 0; transition: color 0.3s; }
+                    .lap-diff { font-size: 0.8rem; font-weight: bold; margin-top: 5px; min-height: 15px;}
+                    
+                    .btn-next { background: #f0f0f0; color: #000; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; width: 100%; transition: transform 0.1s; margin-bottom: 10px;}
+                    .btn-next:active { transform: scale(0.96); }
+                    
+                    .history-list { font-size: 0.75rem; text-align: left; max-height: 100px; overflow-y: auto; background: #1e1e1e; border-radius: 8px; padding: 10px; border: 1px solid #333;}
+                    .hist-item { display: flex; justify-content: space-between; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #333;}
+                    
+                    .safe { color: #8ce99a; } .warning { color: #fcc419; } .danger { color: #ff6b6b; }
+                    .border-safe { border-color: #8ce99a; } .border-warning { border-color: #fcc419; } .border-danger { border-color: #ff6b6b; }
+                `;
+                pipWindow.document.head.appendChild(style);
+
+                function formatTime(sec) {
+                    const absSec = Math.abs(sec);
+                    const m = Math.floor(absSec / 60).toString().padStart(2, '0');
+                    const s = (absSec % 60).toString().padStart(2, '0');
+                    return (sec < 0 ? "-" : "") + `${m}:${s}`;
+                }
+
+                pipWindow.document.body.innerHTML = `
+                    <div class="header">
+                        <span>Restante Geral</span>
+                        <span id="target-label">Alvo: ${formatTime(pipTargetTimePerQuestion)}/Q</span>
+                    </div>
+                    <h1 class="global-timer" id="global-timer">${formatTime(pipGlobalLeft)}</h1>
+                    <div class="q-counter" id="q-counter">Questão 1 de ${pipTotalQuestions}</div>
+
+                    <div class="lap-container border-safe" id="lap-card">
+                        <div class="lap-title">Tempo nesta questão</div>
+                        <h2 class="lap-timer safe" id="lap-timer">00:00</h2>
+                        <div class="lap-diff safe" id="lap-diff">Dentro da meta</div>
+                    </div>
+
+                    <button class="btn-next" id="btn-next">⏭️ Concluir e Próxima</button>
+
+                    <div class="history-list" id="hist-list" style="display: none;"></div>
+                `;
+
+                const globalDisplay = pipWindow.document.getElementById('global-timer');
+                const lapDisplay = pipWindow.document.getElementById('lap-timer');
+                const lapCard = pipWindow.document.getElementById('lap-card');
+                const lapDiffDisplay = pipWindow.document.getElementById('lap-diff');
+                const qCounter = pipWindow.document.getElementById('q-counter');
+                const btnNext = pipWindow.document.getElementById('btn-next');
+                const histList = pipWindow.document.getElementById('hist-list');
+
+                function getStatusClass(sec) {
+                    if (sec <= pipTargetTimePerQuestion * 0.8) return 'safe';
+                    if (sec <= pipTargetTimePerQuestion) return 'warning';
+                    return 'danger';
+                }
+
+                function tick() {
+                    if (pipGlobalLeft > 0) pipGlobalLeft--;
+                    pipCurrentLapTime++;
+
+                    globalDisplay.textContent = formatTime(pipGlobalLeft);
+                    lapDisplay.textContent = formatTime(pipCurrentLapTime);
+
+                    const status = getStatusClass(pipCurrentLapTime);
+                    lapDisplay.className = `lap-timer ${status}`;
+                    lapCard.className = `lap-container border-${status}`;
+
+                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
+                    if (diff > 0) {
+                        lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`;
+                        lapDiffDisplay.className = 'lap-diff safe';
+                    } else if (diff === 0) {
+                        lapDiffDisplay.textContent = `No limite da meta!`;
+                        lapDiffDisplay.className = 'lap-diff warning';
+                    } else {
+                        lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de outras questões!`;
+                        lapDiffDisplay.className = 'lap-diff danger';
+                    }
+
+                    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
+                        clearInterval(pipInterval);
+                        globalDisplay.style.color = '#ff6b6b';
+                        btnNext.textContent = "Fim do Tempo Geral";
+                        btnNext.disabled = true;
+                        showHistory();
+                    }
+                }
+
+                function nextQuestion() {
+                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
+                    const statusText = diff >= 0 ? `<span style="color:#8ce99a">+${formatTime(diff)}</span>` : `<span style="color:#ff6b6b">-${formatTime(Math.abs(diff))}</span>`;
+                    pipHistory.push(`Q${pipCurrentQ}: ${formatTime(pipCurrentLapTime)} (${statusText})`);
+
+                    if (pipCurrentQ >= pipTotalQuestions) {
+                        clearInterval(pipInterval);
+                        btnNext.textContent = "🎉 Simulado Concluído!";
+                        btnNext.disabled = true;
+                        showHistory();
+                        return;
+                    }
+
+                    pipCurrentQ++;
+                    pipCurrentLapTime = 0;
+                    qCounter.textContent = `Questão ${pipCurrentQ} de ${pipTotalQuestions}`;
+                    lapDisplay.textContent = "00:00";
+                    tick();
+                }
+
+                function showHistory() {
+                    histList.style.display = 'block';
+                    histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
+                }
+
+                btnNext.addEventListener('click', nextQuestion);
+                
+                if (pipInterval) clearInterval(pipInterval);
+                pipInterval = setInterval(tick, 1000);
+
+                pipWindow.addEventListener("pagehide", () => {
+                    clearInterval(pipInterval);
+                });
+
+            } catch (error) {
+                console.error("Erro ao abrir PiP:", error);
+                alert("Erro ao abrir a janela flutuante. Recarregue a página e tente novamente.");
+            }
+        }
+
+
+        // ==========================================
+        // LÓGICA ORIGINAL POMODORO / SINC
+        // ==========================================
         function updateCloudCredentials() {
             const btn = document.getElementById('btn-conectar-nuvem');
             if(btn) btn.textContent = '⏳ Conectando e baixando dados...';
@@ -731,8 +955,33 @@
         function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; }
         
         function hideTimerElements(hide) { document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1'; document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8'; document.getElementById('main-controls').style.opacity = hide ? '0' : '1'; }
-        function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(historyPanel.classList.contains('open')); }
-        function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(settingsPanel.classList.contains('open')); }
+        
+        // CONTROLE DOS PAINÉIS
+        function toggleSpeedrunner() { 
+            if (!speedrunnerPanel.classList.contains('open')) updatePipPreview();
+            speedrunnerPanel.classList.toggle('open'); 
+            historyPanel.classList.remove('open'); 
+            settingsPanel.classList.remove('open'); 
+            statsPanel.classList.remove('open'); 
+            hideTimerElements(speedrunnerPanel.classList.contains('open')); 
+        }
+
+        function toggleHistory() { 
+            if (!historyPanel.classList.contains('open')) renderHistory(); 
+            historyPanel.classList.toggle('open'); 
+            settingsPanel.classList.remove('open'); 
+            statsPanel.classList.remove('open'); 
+            speedrunnerPanel.classList.remove('open');
+            hideTimerElements(historyPanel.classList.contains('open')); 
+        }
+
+        function toggleSettings() { 
+            settingsPanel.classList.toggle('open'); 
+            historyPanel.classList.remove('open'); 
+            statsPanel.classList.remove('open'); 
+            speedrunnerPanel.classList.remove('open');
+            hideTimerElements(settingsPanel.classList.contains('open')); 
+        }
         
         function toggleStats() { 
             if (!statsPanel.classList.contains('open')) { 
@@ -743,7 +992,11 @@
                     if (scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth;
                 }, 50);
             } 
-            statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); hideTimerElements(statsPanel.classList.contains('open')); 
+            statsPanel.classList.toggle('open'); 
+            historyPanel.classList.remove('open'); 
+            settingsPanel.classList.remove('open'); 
+            speedrunnerPanel.classList.remove('open');
+            hideTimerElements(statsPanel.classList.contains('open')); 
         }
 
         function renderStats(period) {
@@ -777,7 +1030,6 @@
             }
         }
 
-        // GITHUB STYLE HEATMAP (MOSTRA TODOS OS MESES LADO A LADO)
         function renderHeatmap() {
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             let dailyMins = {}; let totalMins = 0; let earliestDate = null;
@@ -870,20 +1122,15 @@
                 heatmapGrid.appendChild(cell); iterDate.setDate(iterDate.getDate() + 1);
             }
             
-            // Lógica fina para MOSTRAR TODOS OS MESES SEM SOBREPOR:
             let monthsHtml = '';
             let lastRenderedLeft = -50; 
             
             for (let i = 0; i < monthLabels.length; i++) {
                 let m = monthLabels[i];
                 let idealLeft = m.col * 13; 
-                
-                // Se a posição ideal bater na palavra anterior, empurra um pouquinho pra direita (25 pixels de margem de segurança)
                 let actualLeft = Math.max(idealLeft, lastRenderedLeft + 25);
-                
                 let mName = m.name.charAt(0).toUpperCase() + m.name.slice(1);
                 monthsHtml += `<span class="heatmap-month-label" style="left: ${actualLeft}px">${mName}</span>`;
-                
                 lastRenderedLeft = actualLeft;
             }
             heatmapMonths.innerHTML = monthsHtml;
