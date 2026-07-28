@@ -693,13 +693,26 @@
                 }
 
                 // FUNÇÃO DE FINALIZAÇÃO (SALVA TUDO E TOCA O ALARME)
+                // FUNÇÃO DE FINALIZAÇÃO (SALVA TUDO E TOCA O ALARME)
                 function finishSpeedrunner() {
                     if (pipFinished) return;
                     pipFinished = true;
                     clearInterval(pipInterval);
                     
-                    btnNext.textContent = "🎉 Simulado Concluído!";
+                    // 🚨 O GRANDE AVISO VISUAL NA JANELA PIP 🚨
+                    globalDisplay.textContent = "ACABOU!";
+                    globalDisplay.style.color = "var(--pip-danger)";
+                    globalDisplay.style.fontSize = "3rem";
+                    
+                    lapCard.innerHTML = `<h2 style="color: var(--pip-danger); margin: 0; font-size: 1.5rem;">Tempo Geral Esgotado!</h2>`;
+                    lapCard.style.borderColor = "var(--pip-danger)";
+                    lapCard.style.background = "rgba(255, 107, 107, 0.15)";
+                    
+                    btnNext.textContent = "🏁 Simulado Finalizado";
                     btnNext.disabled = true;
+                    btnNext.style.background = "var(--pip-danger)";
+                    btnNext.style.color = "#fff";
+                    
                     histList.style.display = 'block';
                     histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
                     
@@ -715,11 +728,10 @@
                         saveToHistory(subj, color, totalElapsed);
                         silentCloudSave();
                         setTimeout(() => {
-                            alert(`⏱️ Simulado Encerrado!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nIsso já entrou na sua contagem de Horas Líquidas!`);
+                            alert(`🚨 O TEMPO GERAL ACABOU!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nIsso já entrou na sua contagem de Horas Líquidas!`);
                         }, 500);
                     }
                 }
-
             function tick() {
                 if (pipGlobalLeft > 0) pipGlobalLeft--;
                 pipCurrentLapTime++;
