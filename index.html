@@ -183,16 +183,16 @@
         .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
         .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
 
-        /* HEATMAP DYNAMIC - GITHUB STYLE FIXADO */
-        .stats-divider { margin: 24px 0 16px 0; border-top: 1px dashed var(--border-color); position: relative; }
+        /* HEATMAP DYNAMIC - GITHUB STYLE FIXADO ESPAÇAMENTO */
+        .stats-divider { margin: 40px 0 25px 0; border-top: 1px dashed var(--border-color); position: relative; }
         .stats-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-card); padding: 0 10px; font-size: 0.7rem; font-weight: 600; opacity: 0.7; white-space: nowrap;}
         
         .heatmap-outer { 
             width: 100%; 
             overflow-x: auto; 
             overflow-y: hidden; 
-            margin-top: 15px; 
-            text-align: center; /* Centraliza o inner se for pequeno */
+            margin-top: 25px; 
+            text-align: center; 
             scroll-behavior: smooth;
         }
         .heatmap-outer::-webkit-scrollbar { height: 4px; }
@@ -209,7 +209,7 @@
         .heatmap-months { 
             position: relative; 
             height: 16px; 
-            margin-left: 28px; /* Alinhamento exato com a grade que vem depois das letras dos dias */
+            margin-left: 28px; 
             font-size: 0.65rem; 
             font-weight: 600; 
             opacity: 0.6; 
@@ -218,17 +218,17 @@
         
         .heatmap-body { display: flex; gap: 6px; align-items: flex-start; }
         
-        /* Centralização perfeita das letras "Seg", "Qua", "Sex" */
+        /* Agora com os 7 dias da semana menores para caber bonito */
         .heatmap-days { 
             display: grid; 
             grid-template-rows: repeat(7, 10px); 
             gap: 3px; 
-            font-size: 0.55rem; 
+            font-size: 0.5rem; 
             font-weight: 600; 
             opacity: 0.5; 
             text-align: right; 
-            align-items: center; /* Centraliza o texto no quadrado exato de 10px */
-            width: 22px; /* Largura fixa para alinhar a margem do mês */
+            align-items: center; 
+            width: 22px; 
         }
         
         .heatmap-grid { display: grid; grid-template-rows: repeat(7, 10px); grid-auto-flow: column; gap: 3px; }
@@ -303,7 +303,7 @@
             <div id="clear-history-wrapper"></div>
         </div>
 
-        <!-- ESTATÍSTICAS E HEATMAP GITHUB STYLE -->
+        <!-- ESTATÍSTICAS E HEATMAP -->
         <div class="overlay-panel" id="stats-panel">
             <div class="panel-header" style="margin-bottom: 10px;">
                 <span class="panel-title">Estatísticas</span>
@@ -323,13 +323,13 @@
 
             <div class="stats-divider"><span>Trilha da Aprovação</span></div>
 
-            <!-- GitHub Style Heatmap Centrado -->
+            <!-- GitHub Style Heatmap Centrado e Mais Espaçado -->
             <div class="heatmap-outer" id="heatmap-outer">
                 <div class="heatmap-inner">
                     <div class="heatmap-months" id="heatmap-months"></div>
                     <div class="heatmap-body">
                         <div class="heatmap-days">
-                            <span></span><span>Seg</span><span></span><span>Qua</span><span></span><span>Sex</span><span></span>
+                            <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
                         </div>
                         <div class="heatmap-grid" id="heatmap-grid"></div>
                     </div>
@@ -735,12 +735,10 @@
         function toggleHistory() { if (!historyPanel.classList.contains('open')) renderHistory(); historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(historyPanel.classList.contains('open')); }
         function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(settingsPanel.classList.contains('open')); }
         
-        // EFEITO DO SCROLL SUAVE PARA MOSTRAR OS QUADRADINHOS DO FIM
         function toggleStats() { 
             if (!statsPanel.classList.contains('open')) { 
                 renderStats('hoje'); 
                 renderHeatmap(); 
-                // Dá um tempinho minúsculo pro navegador desenhar e rola a tela:
                 setTimeout(() => {
                     const scrollBox = document.getElementById('heatmap-outer');
                     if (scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth;
@@ -780,6 +778,7 @@
             }
         }
 
+        // GITHUB STYLE HEATMAP (CORRIGIDO PARA NÃO SOBREPOR MESES)
         function renderHeatmap() {
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             let dailyMins = {}; let totalMins = 0; let earliestDate = null;
@@ -831,18 +830,26 @@
             let monthsHtml = '';
             let colIndex = 0;
             let lastMonth = -1;
+            let lastLabelPos = -50; // Para checar distância e não encavalar os meses
             
             let iterDate = new Date(startDate);
             while(iterDate <= finalEndDate) {
                 
-                // MÁGICA DOS MESES SEM EMBOLAR:
+                // MÁGICA DOS MESES SEM SOBREPOSIÇÃO:
                 if (iterDate.getDay() === 0) {
                     if (iterDate.getMonth() !== lastMonth) {
                         let leftPos = colIndex * 13; // 10px largura + 3px gap
-                        let mName = iterDate.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
-                        mName = mName.charAt(0).toUpperCase() + mName.slice(1); // Força a 1ª letra a ser Maiúscula
-                        monthsHtml += `<span class="heatmap-month-label" style="left: ${leftPos}px">${mName}</span>`;
-                        lastMonth = iterDate.getMonth();
+                        // Se estiver a mais de 24 pixels da última palavra, escreve!
+                        if (leftPos - lastLabelPos > 24) {
+                            let mName = iterDate.toLocaleDateString('pt-BR', {month: 'short'}).replace('.','');
+                            mName = mName.charAt(0).toUpperCase() + mName.slice(1);
+                            monthsHtml += `<span class="heatmap-month-label" style="left: ${leftPos}px">${mName}</span>`;
+                            lastLabelPos = leftPos;
+                            lastMonth = iterDate.getMonth();
+                        } else {
+                            // Pula o desenho para não embolar, mas anota o mês para não tentar na semana seguinte
+                            lastMonth = iterDate.getMonth();
+                        }
                     }
                     colIndex++;
                 }
