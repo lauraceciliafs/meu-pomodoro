@@ -1280,7 +1280,7 @@
             display.style.fontSize = hours > 0 ? "1.8rem" : "2.5rem";
             
             let modeName = currentMode === 'foco' ? 'Foco' : currentMode === 'crono' ? 'Crono' : 'Pausa';
-            document.title = `💖 ${timeString} - ${modeName}`;
+            document.title = ` ${timeString} - ${modeName}`;
 
             if (currentMode === 'crono') { 
                 const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
