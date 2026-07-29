@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Trilha da Aprovação</title>
-    <link rel="icon" type="image/gif" href="Heart.gif">
+    <link rel="icon" type="image/gif" href="Heart.gif?v=2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -325,7 +325,7 @@
                 <input type="text" id="inp-pip-subject" class="setting-input" value="Simulado PVO">
             </div>
 
-            <div id="pip-calc-preview" style="background: rgba(125,125,125,0.05); border: 1px dashed var(--accent-color); padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;">
+            <div id="pip-calc-preview" style="background: rgba(125,125,125,0.05); border: 1px dashed var(--text-color); padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 20px; text-align: center;">
                 Alvo: <strong>05:00</strong> por questão.
             </div>
             
@@ -636,7 +636,7 @@
                     .global-timer { font-family: var(--pip-font-timer); font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--pip-text); transition: color 0.3s;}
                     .q-counter { font-size: 0.85rem; color: var(--pip-accent); font-weight: bold; margin-bottom: 20px; }
                     
-                    .lap-container { background: rgba(125,125,125,0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(125,125,125,0.2); transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
+                    .lap-container { background: rgba(125,125,125,0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--pip-text); opacity: 0.8; transition: border-color 0.3s; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;}
                     .lap-title { font-size: 0.75rem; opacity: 0.7; margin-bottom: 5px; }
                     .lap-timer { font-family: var(--pip-font-timer); font-size: 3.5rem; font-weight: 700; margin: 0; transition: color 0.3s; }
                     .lap-diff { font-size: 0.8rem; font-weight: bold; margin-top: 5px; min-height: 15px;}
@@ -649,7 +649,7 @@
                     
                     /* Cores Customizáveis do Semáforo */
                     .safe { color: var(--pip-safe); } .warning { color: var(--pip-warn); } .danger { color: var(--pip-danger); }
-                    .border-safe { border-color: var(--pip-safe); } .border-warning { border-color: var(--pip-warn); } .border-danger { border-color: var(--pip-danger); }
+                    .border-safe { border-color: var(--pip-safe) !important; opacity: 1 !important; } .border-warning { border-color: var(--pip-warn) !important; opacity: 1 !important; } .border-danger { border-color: var(--pip-danger) !important; opacity: 1 !important; }
                 `;
                 pipWindow.document.head.appendChild(style);
 
@@ -668,7 +668,7 @@
                     <h1 class="global-timer" id="global-timer">${formatTime(pipGlobalLeft)}</h1>
                     <div class="q-counter" id="q-counter">Questão 1 de ${pipTotalQuestions}</div>
 
-                    <div class="lap-container border-safe" id="lap-card">
+                    <div class="lap-container" id="lap-card">
                         <div class="lap-title">Tempo nesta questão</div>
                         <h2 class="lap-timer safe" id="lap-timer">00:00</h2>
                         <div class="lap-diff safe" id="lap-diff">Dentro da meta</div>
@@ -693,14 +693,11 @@
                     return 'danger';
                 }
 
-                // FUNÇÃO DE FINALIZAÇÃO (SALVA TUDO E TOCA O ALARME)
-                // FUNÇÃO DE FINALIZAÇÃO (SALVA TUDO E TOCA O ALARME)
                 function finishSpeedrunner() {
                     if (pipFinished) return;
                     pipFinished = true;
                     clearInterval(pipInterval);
                     
-                    // 🚨 O GRANDE AVISO VISUAL NA JANELA PIP 🚨
                     globalDisplay.textContent = "ACABOU!";
                     globalDisplay.style.color = "var(--pip-danger)";
                     globalDisplay.style.fontSize = "3rem";
@@ -717,10 +714,8 @@
                     histList.style.display = 'block';
                     histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
                     
-                    // Toca o alarme sonoro
                     alarmAudio.play().catch(e=>{});
                     
-                    // Integra com a Trilha da Aprovação (Salva no Histórico Principal)
                     const subj = document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO";
                     const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
                     const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
@@ -733,39 +728,37 @@
                         }, 500);
                     }
                 }
-            function tick() {
-                if (pipGlobalLeft > 0) pipGlobalLeft--;
-                pipCurrentLapTime++;
 
-                globalDisplay.textContent = formatTime(pipGlobalLeft);
-                lapDisplay.textContent = formatTime(pipCurrentLapTime);
+                function tick() {
+                    if (pipGlobalLeft > 0) pipGlobalLeft--;
+                    pipCurrentLapTime++;
 
-                const status = getStatusClass(pipCurrentLapTime);
-                lapDisplay.className = `lap-timer ${status}`;
-                lapCard.className = `lap-container border-${status}`;
+                    globalDisplay.textContent = formatTime(pipGlobalLeft);
+                    lapDisplay.textContent = formatTime(pipCurrentLapTime);
 
-                const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
-                if (diff > 0) {
-                lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`;
-                lapDiffDisplay.className = 'lap-diff safe';
-        } else if (diff === 0) {
-        lapDiffDisplay.textContent = `No limite da meta!`;
-        lapDiffDisplay.className = 'lap-diff warning';
-        } else {
-        lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de outras questões!`;
-        lapDiffDisplay.className = 'lap-diff danger';
-        
-        // 🚨 AVISO OPCIONAL: Se quiser que toque um bipe suave sempre que estourar o tempo de uma questão:
-        // if (diff === -1) { alarmAudio.play().catch(e=>{}); }
-    }
+                    const status = getStatusClass(pipCurrentLapTime);
+                    lapDisplay.className = `lap-timer ${status}`;
+                    lapCard.className = `lap-container border-${status}`;
 
-    // Alerta de Fim de Prova
-    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
-        pipGlobalLeft = 0;
-        globalDisplay.style.color = 'var(--pip-danger)';
-        finishSpeedrunner(); // Aqui já dispara o alarme e salva no histórico!
-    }
-}
+                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
+                    if (diff > 0) {
+                        lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`;
+                        lapDiffDisplay.className = 'lap-diff safe';
+                    } else if (diff === 0) {
+                        lapDiffDisplay.textContent = `No limite da meta!`;
+                        lapDiffDisplay.className = 'lap-diff warning';
+                    } else {
+                        lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de outras questões!`;
+                        lapDiffDisplay.className = 'lap-diff danger';
+                    }
+
+                    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) {
+                        pipGlobalLeft = 0;
+                        globalDisplay.style.color = 'var(--pip-danger)';
+                        finishSpeedrunner();
+                    }
+                }
+
                 function nextQuestion() {
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
                     const statusColor = diff >= 0 ? 'var(--pip-safe)' : 'var(--pip-danger)';
@@ -789,12 +782,11 @@
                 if (pipInterval) clearInterval(pipInterval);
                 pipInterval = setInterval(tick, 1000);
 
-                // O que fazer se você fechar a janela no meio do simulado:
                 pipWindow.addEventListener("pagehide", () => {
                     clearInterval(pipInterval);
                     if (!pipFinished) {
                         const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
-                        if (totalElapsed > 60) { // Só salva se passou de 1 minuto
+                        if (totalElapsed > 60) {
                             const subj = document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO";
                             const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
                             saveToHistory(subj, color, totalElapsed);
@@ -816,8 +808,8 @@
         function updateCloudCredentials() {
             const btn = document.getElementById('btn-conectar-nuvem');
             if(btn) btn.textContent = '⏳ Conectando e baixando dados...';
-            localStorage.setItem(getKey('BinId'), inputBinId.value.trim());
-            localStorage.setItem(getKey('MasterKey'), inputMasterKey.value.trim());
+            localStorage.setItem(getKey('BinId'), document.getElementById('input-bin-id').value.trim());
+            localStorage.setItem(getKey('MasterKey'), document.getElementById('input-master-key').value.trim());
             sessionStorage.removeItem('CloudSynced');
             autoCloudLoad(true);
         }
@@ -840,7 +832,11 @@
         }
 
         async function autoCloudLoad(isManual = false) {
-            if (!isManual && sessionStorage.getItem('CloudSynced')) return; 
+            if (!isManual && sessionStorage.getItem('CloudSynced')) {
+                setCloudStatus('success');
+                return; 
+            }
+            
             const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey'));
             const btn = document.getElementById('btn-conectar-nuvem');
             
@@ -880,18 +876,19 @@
                     if (s.pipDanger) originalSetItem.call(localStorage, getKey('PipDanger'), s.pipDanger);
                 }
                 
-                sessionStorage.setItem('CloudSynced', 'true'); setCloudStatus('success');
+                sessionStorage.setItem('CloudSynced', 'true'); 
+                setCloudStatus('success');
+                
+                // PINTA A TELA APÓS SUCESSO SEM RECARREGAR A PÁGINA
+                applySettingsToUI(); 
                 
                 if(isManual && btn) {
                     btn.textContent = '✅ Sucesso! Painel Atualizado.';
                     btn.style.backgroundColor = 'var(--text-color)'; btn.style.color = 'var(--bg-card)';
-                    applySettingsToUI(); 
                     setTimeout(() => {
                         btn.textContent = '☁️ Conectar e Puxar Dados';
                         btn.style.backgroundColor = 'transparent'; btn.style.color = 'var(--text-color)';
                     }, 3000);
-                } else {
-                    location.reload(); 
                 }
             } catch(e) { 
                 setCloudStatus('error'); 
@@ -950,6 +947,10 @@
             } else if (currentMode === 'longa') {
                 document.documentElement.style.setProperty('--accent-color', longBreakColor);
             }
+            
+            if (!isRunning && currentMode === 'foco') {
+                loadBlock(currentBlockIndex);
+            }
         }
 
         const originalSetItem = localStorage.setItem; let autoSaveTimeout;
@@ -959,27 +960,28 @@
             clearTimeout(autoSaveTimeout); autoSaveTimeout = setTimeout(() => { silentCloudSave(); }, 2000);
         };
         
+        // NOVA LÓGICA DE INICIALIZAÇÃO CORRIGIDA 
         window.addEventListener('load', () => {
-            // 1. Suas chaves "Padrão de Fábrica" (Cole as suas reais aqui)
+            // 👇 INSIRA SUAS CHAVES AQUI DENTRO DAS ASPAS! 👇
             const MEU_BIN_ID = "COLE_SEU_BIN_ID_AQUI";
             const MINHA_MASTER_KEY = "COLE_SUA_MASTER_KEY_AQUI";
 
-            // 2. O sistema olha se você já digitou uma chave nova manualmente no painel.
-            // Se estiver vazio (primeiro acesso), ele usa as suas de fábrica.
             let savedBin = localStorage.getItem(getKey('BinId'));
             let savedKey = localStorage.getItem(getKey('MasterKey'));
 
-            if (!savedBin) savedBin = MEU_BIN_ID;
-            if (!savedKey) savedKey = MINHA_MASTER_KEY;
+            if (!savedBin || savedBin.trim() === "") savedBin = MEU_BIN_ID;
+            if (!savedKey || savedKey.trim() === "") savedKey = MINHA_MASTER_KEY;
 
-            // 3. Injeta essas chaves nos campos da tela para você ver que estão lá
             document.getElementById('input-bin-id').value = savedBin;
             document.getElementById('input-master-key').value = savedKey;
             
-            // 4. Salva no navegador e aciona o download da nuvem!
             localStorage.setItem(getKey('BinId'), savedBin);
             localStorage.setItem(getKey('MasterKey'), savedKey);
             
+            // Pinta a tela imediatamente com o que já tem salvo no computador
+            applySettingsToUI(); 
+            
+            // Tenta puxar novidades da nuvem em segundo plano
             autoCloudLoad();
         });
 
@@ -1079,7 +1081,6 @@
         
         function hideTimerElements(hide) { document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1'; document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8'; document.getElementById('main-controls').style.opacity = hide ? '0' : '1'; }
         
-        // CONTROLE DOS PAINÉIS
         function toggleSpeedrunner() { 
             if (!speedrunnerPanel.classList.contains('open')) updatePipPreview();
             speedrunnerPanel.classList.toggle('open'); 
@@ -1266,7 +1267,7 @@
                 display.textContent = "00:00"; 
                 display.style.fontSize = "2.5rem"; 
                 progressBar.style.strokeDashoffset = circumference; 
-                document.title = "Aesthetic Pomodoro"; // Reseta a aba quando vazio
+                document.title = "Aesthetic Pomodoro";
                 return; 
             }
             
@@ -1278,9 +1279,8 @@
             display.textContent = timeString; 
             display.style.fontSize = hours > 0 ? "1.8rem" : "2.5rem";
             
-            // ⏱️ ATUALIZA O NOME DA ABA DO NAVEGADOR A CADA SEGUNDO
             let modeName = currentMode === 'foco' ? 'Foco' : currentMode === 'crono' ? 'Crono' : 'Pausa';
-            document.title = ` ${timeString} - ${modeName}`;
+            document.title = `💖 ${timeString} - ${modeName}`;
 
             if (currentMode === 'crono') { 
                 const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
