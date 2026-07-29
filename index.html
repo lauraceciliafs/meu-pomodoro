@@ -1242,10 +1242,34 @@
 
         function updateDisplay() {
             let timeToFormat = currentMode === 'crono' ? cronoTime : timeLeft;
-            if (blocksQueue.length === 0 && currentMode === 'foco') { display.textContent = "00:00"; display.style.fontSize = "2.5rem"; progressBar.style.strokeDashoffset = circumference; return; }
-            const hours = Math.floor(timeToFormat / 3600); const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); const seconds = (timeToFormat % 60).toString().padStart(2, '0');
-            if (hours > 0) { display.textContent = `${hours}:${minutes}:${seconds}`; display.style.fontSize = "1.8rem"; } else { display.textContent = `${minutes}:${seconds}`; display.style.fontSize = "2.5rem"; }
-            if (currentMode === 'crono') { const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; progressBar.style.strokeDashoffset = offset; } else if (totalSecondsCurrent > 0) { const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; progressBar.style.strokeDashoffset = offset; }
+            
+            if (blocksQueue.length === 0 && currentMode === 'foco') { 
+                display.textContent = "00:00"; 
+                display.style.fontSize = "2.5rem"; 
+                progressBar.style.strokeDashoffset = circumference; 
+                document.title = "Aesthetic Pomodoro"; // Reseta a aba quando vazio
+                return; 
+            }
+            
+            const hours = Math.floor(timeToFormat / 3600); 
+            const minutes = Math.floor((timeToFormat % 3600) / 60).toString().padStart(2, '0'); 
+            const seconds = (timeToFormat % 60).toString().padStart(2, '0');
+            
+            let timeString = hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`;
+            display.textContent = timeString; 
+            display.style.fontSize = hours > 0 ? "1.8rem" : "2.5rem";
+            
+            // ⏱️ ATUALIZA O NOME DA ABA DO NAVEGADOR A CADA SEGUNDO
+            let modeName = currentMode === 'foco' ? 'Foco' : currentMode === 'crono' ? 'Crono' : 'Pausa';
+            document.title = `${timeString} - ${modeName}`;
+
+            if (currentMode === 'crono') { 
+                const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
+                progressBar.style.strokeDashoffset = offset; 
+            } else if (totalSecondsCurrent > 0) { 
+                const offset = circumference - (timeLeft / totalSecondsCurrent) * circumference; 
+                progressBar.style.strokeDashoffset = offset; 
+            }
         }
 
         function updatePreviewColor(color) { colorPreview.style.backgroundColor = color; }
