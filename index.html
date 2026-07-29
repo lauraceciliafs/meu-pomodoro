@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aesthetic Pomodoro - Trilha da Aprovação</title>
+    <link rel="icon" type="image/gif" href="Heart.gif">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -959,8 +960,26 @@
         };
         
         window.addEventListener('load', () => {
-            document.getElementById('input-bin-id').value = localStorage.getItem(getKey('BinId')) || '';
-            document.getElementById('input-master-key').value = localStorage.getItem(getKey('MasterKey')) || '';
+            // 1. Suas chaves "Padrão de Fábrica" (Cole as suas reais aqui)
+            const MEU_BIN_ID = "COLE_SEU_BIN_ID_AQUI";
+            const MINHA_MASTER_KEY = "COLE_SUA_MASTER_KEY_AQUI";
+
+            // 2. O sistema olha se você já digitou uma chave nova manualmente no painel.
+            // Se estiver vazio (primeiro acesso), ele usa as suas de fábrica.
+            let savedBin = localStorage.getItem(getKey('BinId'));
+            let savedKey = localStorage.getItem(getKey('MasterKey'));
+
+            if (!savedBin) savedBin = MEU_BIN_ID;
+            if (!savedKey) savedKey = MINHA_MASTER_KEY;
+
+            // 3. Injeta essas chaves nos campos da tela para você ver que estão lá
+            document.getElementById('input-bin-id').value = savedBin;
+            document.getElementById('input-master-key').value = savedKey;
+            
+            // 4. Salva no navegador e aciona o download da nuvem!
+            localStorage.setItem(getKey('BinId'), savedBin);
+            localStorage.setItem(getKey('MasterKey'), savedKey);
+            
             autoCloudLoad();
         });
 
@@ -1261,7 +1280,7 @@
             
             // ⏱️ ATUALIZA O NOME DA ABA DO NAVEGADOR A CADA SEGUNDO
             let modeName = currentMode === 'foco' ? 'Foco' : currentMode === 'crono' ? 'Crono' : 'Pausa';
-            document.title = `${timeString} - ${modeName}`;
+            document.title = ` ${timeString} - ${modeName}`;
 
             if (currentMode === 'crono') { 
                 const offset = circumference - ((timeToFormat % 3600) / 3600) * circumference; 
