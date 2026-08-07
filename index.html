@@ -336,13 +336,15 @@
             </p>
         </div>
 
+        <!-- HISTÓRICO DE ESTUDOS -->
         <div class="overlay-panel" id="history-panel">
             <div class="panel-header">
                 <span class="panel-title">Histórico de Estudos</span>
                 <button class="close-panel" onclick="toggleHistory()">✖</button>
             </div>
             
-           <button class="main-btn" style="width: 100%; border: 1px dashed var(--text-color); margin-bottom: 16px; font-weight: bold;" onclick="addDummyHistory()">➕ Adicionar Registro Rápido</button>
+            <!-- BOTÃO REGISTRO RÁPIDO (EM LINHA) -->
+            <button class="main-btn" style="width: 100%; border: 1px dashed var(--text-color); margin-bottom: 16px; font-weight: bold;" onclick="addDummyHistory()">➕ Adicionar Registro Rápido</button>
 
             <div id="history-content"></div>
             <div id="clear-history-wrapper"></div>
@@ -405,6 +407,7 @@
             </div>
         </div>
 
+        <!-- CONFIGURAÇÕES -->
         <div class="overlay-panel" id="settings-panel">
             <div class="panel-header">
                 <span class="panel-title">Configurações Gerais</span>
@@ -722,8 +725,8 @@
         const originalSetItem = localStorage.setItem; let autoSaveTimeout;
         localStorage.setItem = function(key, value) { originalSetItem.apply(this, arguments); if (key.includes('TimerState') || key.includes('BinId') || key.includes('MasterKey')) return; clearTimeout(autoSaveTimeout); autoSaveTimeout = setTimeout(() => { silentCloudSave(); }, 2000); };
         
-       window.addEventListener('load', () => {
-            // 👇 COLOQUE SUAS CHAVES AQUI DENTRO DAS ASPAS! 👇
+        window.addEventListener('load', () => {
+            // As chaves estão vazias para você usar direto no painel (Engrenagem)
             const MEU_BIN_ID = "";
             const MINHA_MASTER_KEY = "";
 
@@ -801,26 +804,19 @@
             history[dateStr][subject].minutes += minsToAdd; localStorage.setItem(getKey('History'), JSON.stringify(history)); calculateNetHoursToday(); 
         }
 
+        // NOVO: REGISTRO RÁPIDO (EM LINHA)
         function addDummyHistory() {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (!history[dateStr]) history[dateStr] = {};
             
-            let subj = "Novo Registro";
-            let counter = 1;
-            while (history[dateStr][subj]) {
-                counter++;
-                subj = `Novo Registro (${counter})`;
-            }
+            let subj = "Novo Registro"; let counter = 1;
+            while (history[dateStr][subj]) { counter++; subj = `Novo Registro (${counter})`; }
             
-            // Cria com 25 minutos genéricos
             history[dateStr][subj] = { minutes: 25, color: '#74c0fc' }; 
             localStorage.setItem(getKey('History'), JSON.stringify(history));
             
-            calculateNetHoursToday();
-            silentCloudSave();
-            
-            // Mágica: já abre o modo de edição instantaneamente na linha!
+            calculateNetHoursToday(); silentCloudSave();
             startEditHistory(dateStr, subj);
         }
 
@@ -862,15 +858,16 @@
         function startEditHistory(dateStr, subject) { editingHistoryItem = { date: dateStr, subject: subject.replace(/\\'/g, "'") }; renderHistory(); } function cancelEditHistory() { editingHistoryItem = null; renderHistory(); } function showClearConfirm() { document.getElementById('clear-history-wrapper').innerHTML = `<div class="clear-confirm-box"><span class="clear-confirm-text">Excluir histórico?</span><div class="clear-confirm-actions"><button class="clear-btn" onclick="executeClearHistory()">✅</button><button class="clear-btn" onclick="resetClearHistoryUI()">❌</button></div></div>`; } function executeClearHistory() { localStorage.removeItem(getKey('History')); renderHistory(); calculateNetHoursToday(); } function resetClearHistoryUI() { document.getElementById('clear-history-wrapper').innerHTML = `<button class="clear-history-btn" onclick="showClearConfirm()">Limpar Histórico</button>`; } function hideTimerElements(hide) { document.getElementById('main-timer-container').style.opacity = hide ? '0' : '1'; document.getElementById('net-hours-today').style.opacity = hide ? '0' : '0.8'; document.getElementById('main-controls').style.opacity = hide ? '0' : '1'; }
         
         function toggleSpeedrunner() { if (!speedrunnerPanel.classList.contains('open')) updatePipPreview(); speedrunnerPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); hideTimerElements(speedrunnerPanel.classList.contains('open')); }
-        function toggleHistory() { 
-            if (!historyPanel.classList.contains('open')) { 
-                renderHistory(); 
-                document.getElementById('manual-date').value = new Date().toISOString().split('T')[0]; // Auto-preenche com data de hoje
-            } 
-            historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); speedrunnerPanel.classList.remove('open'); hideTimerElements(historyPanel.classList.contains('open')); 
-        }
+        function toggleHistory() { if (!historyPanel.classList.contains('open')) { renderHistory(); } historyPanel.classList.toggle('open'); settingsPanel.classList.remove('open'); statsPanel.classList.remove('open'); speedrunnerPanel.classList.remove('open'); hideTimerElements(historyPanel.classList.contains('open')); }
+        
         function toggleSettings() { settingsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); statsPanel.classList.remove('open'); speedrunnerPanel.classList.remove('open'); hideTimerElements(settingsPanel.classList.contains('open')); }
-        function toggleStats() { if (!statsPanel.classList.contains('open')) { renderStats('hoje'); renderHeatmap(); setTimeout(() => { const scrollBox = document.getElementById('heatmap-outer'); if (scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth; }, 50); } statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); speedrunnerPanel.classList.remove('open'); hideTimerElements(statsPanel.classList.contains('open')); }
+        
+        function toggleStats() { 
+            try {
+                if (!statsPanel.classList.contains('open')) { renderStats('hoje'); renderHeatmap(); setTimeout(() => { const scrollBox = document.getElementById('heatmap-outer'); if (scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth; }, 50); } 
+                statsPanel.classList.toggle('open'); historyPanel.classList.remove('open'); settingsPanel.classList.remove('open'); speedrunnerPanel.classList.remove('open'); hideTimerElements(statsPanel.classList.contains('open')); 
+            } catch(e) { console.error("Erro ao abrir estatisticas", e); }
+        }
 
         function renderStats(period) {
             document.getElementById('btn-stat-hoje').classList.remove('active'); document.getElementById('btn-stat-semana').classList.remove('active'); document.getElementById('btn-stat-todos').classList.remove('active'); document.getElementById(`btn-stat-${period}`).classList.add('active');
@@ -933,7 +930,7 @@
 
         function countdown() { if (!isRunning) return; const now = Date.now(); if (currentMode === 'crono') { cronoTime = Math.floor((now - timerStartTime) / 1000); updateDisplay(); saveTimerState(); return; } timeLeft = Math.max(0, Math.ceil((targetEndTime - now) / 1000)); if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].remainingTime = timeLeft; } if (timeLeft > 0) { updateDisplay(); saveTimerState(); } else { timeLeft = 0; updateDisplay(); stopInterval(); isRunning = false; startBtn.textContent = 'Iniciar'; alarmAudio.play().catch(e=>{}); if (currentMode === 'foco') { if(blocksQueue[currentBlockIndex]) { blocksQueue[currentBlockIndex].completed = true; delete blocksQueue[currentBlockIndex].remainingTime; saveToHistory(blocksQueue[currentBlockIndex].subject, blocksQueue[currentBlockIndex].color, blocksQueue[currentBlockIndex].duration); saveQueue(); } completedFocosCount++; renderBlocksList(); if (completedFocosCount % 4 === 0) { startPausa('longa'); } else { startPausa('curta'); } } else { currentMode = 'foco'; loadBlock(currentBlockIndex + 1); } saveTimerState(); } }
         
-        // 🛡️ RE-SINC PERFEITO: Previne perda de dados quando a aba não foi descartada, mas o PC suspendeu a execução
+        // 🛡️ RE-SINC PERFEITO: Previne perda de dados
         document.addEventListener('visibilitychange', () => { 
             if (document.visibilityState === 'visible') { 
                 if (isRunning) { 
