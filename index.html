@@ -342,21 +342,7 @@
                 <button class="close-panel" onclick="toggleHistory()">✖</button>
             </div>
             
-            <!-- NOVO: LANÇAMENTO MANUAL DE TEMPO -->
-            <div class="manual-entry-box">
-                <div class="manual-entry-header">⏱️ Adicionar Tempo Manualmente</div>
-                <div class="manual-entry-row">
-                    <input type="date" id="manual-date" class="setting-input" style="width: 120px;" title="Data">
-                    <input type="text" id="manual-subj" class="setting-input" placeholder="Matéria..." style="flex-grow: 1;">
-                </div>
-                <div class="manual-entry-row" style="margin-top: 8px;">
-                    <div class="color-wrapper" title="Cor da matéria">
-                        <input type="color" id="manual-color" value="#ff6b6b" onchange="updatePreviewColor(this.value)">
-                    </div>
-                    <input type="number" id="manual-mins" class="setting-input" placeholder="Minutos" min="1" style="width: 90px;">
-                    <button class="main-btn" onclick="addManualTime()" style="flex-grow: 1; padding: 8px; font-weight: 600;">➕ Lançar</button>
-                </div>
-            </div>
+           <button class="main-btn" style="width: 100%; border: 1px dashed var(--text-color); margin-bottom: 16px; font-weight: bold;" onclick="addDummyHistory()">➕ Adicionar Registro Rápido</button>
 
             <div id="history-content"></div>
             <div id="clear-history-wrapper"></div>
@@ -815,28 +801,27 @@
             history[dateStr][subject].minutes += minsToAdd; localStorage.setItem(getKey('History'), JSON.stringify(history)); calculateNetHoursToday(); 
         }
 
-        // NOVO: LANÇAMENTO MANUAL DE TEMPO PERDIDO
-        function addManualTime() {
-            const dateInput = document.getElementById('manual-date').value;
-            const subj = document.getElementById('manual-subj').value.trim();
-            const mins = parseInt(document.getElementById('manual-mins').value);
-            const color = document.getElementById('manual-color').value;
-            
-            if (!dateInput || !subj || isNaN(mins) || mins <= 0) { alert("⚠️ Preencha a data, a matéria e os minutos corretamente para salvar!"); return; }
-            
-            const dObj = new Date(dateInput + 'T12:00:00'); 
-            const dateStr = dObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-            
+        function addDummyHistory() {
+            const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
             if (!history[dateStr]) history[dateStr] = {};
-            if (!history[dateStr][subj]) { history[dateStr][subj] = { minutes: 0, color: color }; }
             
-            history[dateStr][subj].minutes += mins; history[dateStr][subj].color = color;
-            localStorage.setItem(getKey('History'), JSON.stringify(history)); silentCloudSave();
+            let subj = "Novo Registro";
+            let counter = 1;
+            while (history[dateStr][subj]) {
+                counter++;
+                subj = `Novo Registro (${counter})`;
+            }
             
-            document.getElementById('manual-subj').value = ''; document.getElementById('manual-mins').value = '';
-            renderHistory(); calculateNetHoursToday();
-            if(statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
+            // Cria com 25 minutos genéricos
+            history[dateStr][subj] = { minutes: 25, color: '#74c0fc' }; 
+            localStorage.setItem(getKey('History'), JSON.stringify(history));
+            
+            calculateNetHoursToday();
+            silentCloudSave();
+            
+            // Mágica: já abre o modo de edição instantaneamente na linha!
+            startEditHistory(dateStr, subj);
         }
 
         function deleteHistoryItem(dateStr, subject) {
