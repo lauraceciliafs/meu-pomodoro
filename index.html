@@ -343,14 +343,18 @@
             </div>
             
             <!-- NOVO: LANÇAMENTO MANUAL DE TEMPO -->
-            <div style="background: rgba(125,125,125,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px dashed var(--border-color);">
-                <span style="font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; display: block;">➕ Lançamento Manual (Recuperar Tempo)</span>
-                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                    <input type="date" id="manual-date" class="setting-input" style="width: 110px; padding: 6px; font-size: 0.75rem;" title="Data">
-                    <input type="text" id="manual-subj" class="setting-input" placeholder="Matéria..." style="flex-grow: 1; min-width: 100px; padding: 6px; font-size: 0.75rem;">
-                    <div class="color-wrapper" style="width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;"><input type="color" id="manual-color" value="#ff6b6b" style="width: 32px; height: 32px; border:none; padding:0;"></div>
-                    <input type="number" id="manual-mins" class="setting-input" placeholder="Min" style="width: 55px; padding: 6px; font-size: 0.75rem;" min="1" title="Minutos">
-                    <button class="main-btn" style="padding: 6px 12px; font-size: 0.75rem; border-color: var(--text-color); background: var(--text-color); color: var(--bg-card);" onclick="addManualTime()">Salvar</button>
+            <div class="manual-entry-box">
+                <div class="manual-entry-header">⏱️ Adicionar Tempo Manualmente</div>
+                <div class="manual-entry-row">
+                    <input type="date" id="manual-date" class="setting-input" style="width: 120px;" title="Data">
+                    <input type="text" id="manual-subj" class="setting-input" placeholder="Matéria..." style="flex-grow: 1;">
+                </div>
+                <div class="manual-entry-row" style="margin-top: 8px;">
+                    <div class="color-wrapper" title="Cor da matéria">
+                        <input type="color" id="manual-color" value="#ff6b6b" onchange="updatePreviewColor(this.value)">
+                    </div>
+                    <input type="number" id="manual-mins" class="setting-input" placeholder="Minutos" min="1" style="width: 90px;">
+                    <button class="main-btn" onclick="addManualTime()" style="flex-grow: 1; padding: 8px; font-weight: 600;">➕ Lançar</button>
                 </div>
             </div>
 
