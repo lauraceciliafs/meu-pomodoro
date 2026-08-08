@@ -164,7 +164,7 @@
         /* HISTORY TAB */
         .history-day { margin-bottom: 16px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
         .history-date-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; display: block; text-transform: capitalize; }
-        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; position: relative; }
+        .history-item { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; position: relative; flex-wrap: wrap;}
         .history-item-subject { display: flex; align-items: center; gap: 6px; }
         .history-item-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .history-item-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; }
@@ -173,6 +173,7 @@
         .history-action-btn:hover { transform: scale(1.2); filter: none; opacity: 1; }
         .clear-history-btn { width: 100%; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
         .clear-history-btn:hover { background: var(--accent-color); color: #fff; }
+        .history-details-box { width: 100%; font-size: 0.65rem; opacity: 0.75; margin-top: 4px; padding-left: 14px; border-left: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 2px;}
 
         /* SETTINGS TAB E PIP */
         .setting-group { margin-bottom: 16px; }
@@ -600,7 +601,7 @@
         }
 
         // ==========================================
-        // PVO SPEEDRUNNER & CORREÇÃO COM PESOS EDITÁVEIS
+        // PVO SPEEDRUNNER & CORREÇÃO COM OVERTIME E RELATÓRIO
         // ==========================================
         let activePipMode = 'prova';
         let pipGlobalLeft = 0; let pipCurrentLapTime = 0; let pipCurrentQ = 1;
@@ -608,7 +609,6 @@
         let pipTargetTimePerQuestion = 0; let pipInitialTotalSec = 0; let pipFinished = false;
         let correctionPlaylist = [];
 
-        // Carrega os pesos da nuvem/local ou usa o padrão
         let CORR_REASONS = JSON.parse(localStorage.getItem(getKey('CorrWeights'))) || {
             "✅ Acerto com Certeza": 1,
             "⏭️ Conteúdo não estudado": 1,
@@ -683,7 +683,6 @@
                 for(let reason in CORR_REASONS) { selectHtml += `<option value="${reason}">${reason}</option>`; }
                 selectHtml += `</select>`;
                 
-                // Agora o tempo é um input text editável e não mais um span estático!
                 div.innerHTML = `<strong style="width: 25px;">Q${i}</strong> ${selectHtml} <input type="text" class="setting-input corr-time-input" style="font-family: var(--font-timer); font-weight: bold; width: 55px; text-align: center; padding: 4px; color: var(--accent-color); background: transparent; border: 1px solid transparent; border-radius: 4px;" value="00:00" title="Altere este tempo livremente se quiser!">`;
                 container.appendChild(div);
             }
@@ -728,17 +727,15 @@
                 const timeInputs = document.querySelectorAll('.corr-time-input');
                 let finalTotalSecs = 0;
 
-                // Lê diretamente o que está escrito na caixinha de tempo, respeitando se você editou!
                 selects.forEach((sel, idx) => {
                     let parts = timeInputs[idx].value.split(':');
-                    let m = parseInt(parts[0]) || 0;
-                    let s = parseInt(parts[1]) || 0;
+                    let m = parseInt(parts[0]) || 0; let s = parseInt(parts[1]) || 0;
                     let allocatedSecs = (m * 60) + s;
                     finalTotalSecs += allocatedSecs;
                     correctionPlaylist.push({ q: idx + 1, reason: sel.value, time: allocatedSecs });
                 });
 
-                pipInitialTotalSec = finalTotalSecs; // O tempo total de prova será a soma exata dos seus tempos customizados
+                pipInitialTotalSec = finalTotalSecs;
                 pipTotalQuestions = correctionPlaylist.length;
                 if (pipTotalQuestions === 0) { alert("Adicione questões para corrigir."); return; }
                 pipTargetTimePerQuestion = correctionPlaylist[0].time;
@@ -766,7 +763,7 @@
                     ? `<div class="lap-title" id="lap-reason" style="font-weight: bold; color: var(--pip-accent); margin-bottom:10px;">📝 ${correctionPlaylist[0].reason}</div>`
                     : `<div class="lap-title" id="lap-reason">Tempo nesta questão</div>`;
 
-                pipWindow.document.body.innerHTML = `<div class="header"><span>Restante Geral</span><span id="target-label">Alvo: ${formatTime(pipTargetTimePerQuestion)}/Q</span></div><h1 class="global-timer" id="global-timer">${formatTime(pipGlobalLeft)}</h1><div class="q-counter" id="q-counter">Questão 1 de ${pipTotalQuestions}</div><div class="lap-container" id="lap-card">${dynamicHeader}<h2 class="lap-timer safe" id="lap-timer">00:00</h2><div class="lap-diff safe" id="lap-diff">Dentro da meta</div></div><button class="btn-next" id="btn-next">⏭️ Concluir e Próxima</button><div class="history-list" id="hist-list" style="display: none;"></div>`;
+                pipWindow.document.body.innerHTML = `<div class="header"><span>Restante Geral</span><span id="target-label">Alvo: ${formatTime(pipTargetTimePerQuestion)}/Q</span></div><h1 class="global-timer" id="global-timer">${formatTime(pipGlobalLeft)}</h1><div class="q-counter" id="q-counter">Questão 1 de ${pipTotalQuestions}</div><div class="lap-container" id="lap-card">${dynamicHeader}<h2 class="lap-timer safe" id="lap-timer">00:00</h2><div class="lap-diff safe" id="lap-diff">Dentro da meta</div></div><button class="btn-next" id="btn-next">⏭️ Próxima Questão</button><div class="history-list" id="hist-list" style="display: none;"></div>`;
 
                 const globalDisplay = pipWindow.document.getElementById('global-timer'); const lapDisplay = pipWindow.document.getElementById('lap-timer'); const lapCard = pipWindow.document.getElementById('lap-card'); const lapDiffDisplay = pipWindow.document.getElementById('lap-diff'); const qCounter = pipWindow.document.getElementById('q-counter'); const btnNext = pipWindow.document.getElementById('btn-next'); const histList = pipWindow.document.getElementById('hist-list'); const lapReason = pipWindow.document.getElementById('lap-reason'); const targetLabel = pipWindow.document.getElementById('target-label');
 
@@ -774,44 +771,60 @@
 
                 function finishSpeedrunner() {
                     if (pipFinished) return; pipFinished = true; clearInterval(pipInterval);
-                    globalDisplay.textContent = "ACABOU!"; globalDisplay.style.color = "var(--pip-danger)"; globalDisplay.style.fontSize = "3rem";
-                    lapCard.innerHTML = `<h2 style="color: var(--pip-danger); margin: 0; font-size: 1.5rem;">Tempo Esgotado!</h2>`; lapCard.style.borderColor = "var(--pip-danger)"; lapCard.style.background = "rgba(255, 107, 107, 0.15)";
-                    btnNext.textContent = "🏁 Sessão Finalizada"; btnNext.disabled = true; btnNext.style.background = "var(--pip-danger)"; btnNext.style.color = "#fff";
-                    histList.style.display = 'block'; histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).reverse().join('');
+                    globalDisplay.textContent = "CONCLUÍDO!"; globalDisplay.style.color = "var(--pip-safe)"; globalDisplay.style.fontSize = "3rem";
+                    lapCard.innerHTML = `<h2 style="color: var(--pip-safe); margin: 0; font-size: 1.5rem;">Sessão Salva!</h2>`; lapCard.style.borderColor = "var(--pip-safe)"; lapCard.style.background = "rgba(81, 207, 102, 0.15)";
+                    btnNext.textContent = "🏁 Fechar Janela"; btnNext.disabled = true; btnNext.style.background = "var(--pip-safe)"; btnNext.style.color = "#fff";
+                    histList.style.display = 'block'; histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).join('');
                     alarmAudio.play().catch(e=>{});
                     
                     const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
-                    const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
+                    const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; 
+                    // O tempo total agora é o que ele gastou de verdade na vida real:
+                    let totalElapsedReal = 0;
+                    pipHistory.forEach(item => {
+                        let match = item.match(/\] \-\> (\d+):(\d+)/);
+                        if(match) totalElapsedReal += (parseInt(match[1])*60) + parseInt(match[2]);
+                    });
                     
-                    if (totalElapsed > 0) {
-                        saveToHistory(subj, color, totalElapsed); silentCloudSave(); renderHistory(); 
+                    if (totalElapsedReal > 0) {
+                        saveToHistory(subj, color, totalElapsedReal, pipHistory); silentCloudSave(); renderHistory(); 
                         if(statsPanel && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
-                        setTimeout(() => { alert(`🚨 TEMPO FINALIZADO!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nJá contabilizado no Histórico e Horas Líquidas!`); }, 500);
                     }
                 }
 
                 function tick() {
-                    if (pipGlobalLeft > 0) pipGlobalLeft--; pipCurrentLapTime++;
-                    globalDisplay.textContent = formatTime(pipGlobalLeft); lapDisplay.textContent = formatTime(pipCurrentLapTime);
+                    // MUDANÇA: O tempo global agora apenas desce. Se ficar negativo, ele mostra que estourou o tempo planejado, mas continua rolando.
+                    pipGlobalLeft--; pipCurrentLapTime++;
+                    globalDisplay.textContent = formatTime(pipGlobalLeft); 
+                    if(pipGlobalLeft < 0) globalDisplay.style.color = 'var(--pip-danger)';
+                    else globalDisplay.style.color = 'var(--pip-text)';
+
+                    lapDisplay.textContent = formatTime(pipCurrentLapTime);
                     const status = getStatusClass(pipCurrentLapTime); lapDisplay.className = `lap-timer ${status}`; lapCard.className = `lap-container border-${status}`;
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
-                    if (diff > 0) { lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`; lapDiffDisplay.className = 'lap-diff safe'; } else if (diff === 0) { lapDiffDisplay.textContent = `No limite da meta!`; lapDiffDisplay.className = 'lap-diff warning'; } else { lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} a mais!`; lapDiffDisplay.className = 'lap-diff danger'; }
-                    if (pipGlobalLeft <= 0 && pipCurrentQ <= pipTotalQuestions) { pipGlobalLeft = 0; globalDisplay.style.color = 'var(--pip-danger)'; finishSpeedrunner(); }
+                    if (diff > 0) { lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`; lapDiffDisplay.className = 'lap-diff safe'; } else if (diff === 0) { lapDiffDisplay.textContent = `No limite da meta!`; lapDiffDisplay.className = 'lap-diff warning'; } else { lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de cheque especial!`; lapDiffDisplay.className = 'lap-diff danger'; }
+                    
+                    // Removido o código que fechava a aba automaticamente. Agora só fecha clicando no botão "Próxima".
                 }
 
                 function nextQuestion() {
-                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime; const statusColor = diff >= 0 ? 'var(--pip-safe)' : 'var(--pip-danger)'; const statusText = `<span style="color:${statusColor}">${diff >= 0 ? '+' : '-'}${formatTime(Math.abs(diff))}</span>`;
-                    pipHistory.push(`Q${pipCurrentQ}: ${formatTime(pipCurrentLapTime)} (${statusText})`);
+                    const diff = pipTargetTimePerQuestion - pipCurrentLapTime; const statusColor = diff >= 0 ? 'var(--pip-safe)' : 'var(--pip-danger)'; 
+                    const statusText = `<span style="color:${statusColor}">${diff >= 0 ? '+' : '-'}${formatTime(Math.abs(diff))}</span>`;
+                    const labelQ = activePipMode === 'correcao' ? `[${correctionPlaylist[pipCurrentQ-1].reason.split(' ')[0]}]` : `[Simulado]`;
+                    
+                    // Salva a string detalhada no array para ir para o Histórico Principal
+                    pipHistory.push(`<strong>Q${pipCurrentQ}</strong> ${labelQ} -> ${formatTime(pipCurrentLapTime)} (Meta: ${formatTime(pipTargetTimePerQuestion)} | Saldo: ${statusText})`);
+                    
                     if (pipCurrentQ >= pipTotalQuestions) { finishSpeedrunner(); return; }
                     pipCurrentQ++; pipCurrentLapTime = 0; 
                     qCounter.textContent = `Questão ${pipCurrentQ} de ${pipTotalQuestions}`; lapDisplay.textContent = "00:00"; 
+                    if(pipCurrentQ === pipTotalQuestions) btnNext.textContent = "✅ Concluir Simulado";
                     
                     if (activePipMode === 'correcao') {
                         pipTargetTimePerQuestion = correctionPlaylist[pipCurrentQ - 1].time;
                         lapReason.textContent = `📝 ${correctionPlaylist[pipCurrentQ - 1].reason}`;
                         targetLabel.textContent = `Alvo: ${formatTime(pipTargetTimePerQuestion)}/Q`;
                     }
-                    
                     tick();
                 }
 
@@ -821,11 +834,15 @@
                 pipWindow.addEventListener("pagehide", () => {
                     clearInterval(pipInterval);
                     if (!pipFinished) {
-                        const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
-                        if (totalElapsed > 0) {
+                        let totalElapsedReal = 0;
+                        pipHistory.forEach(item => {
+                            let match = item.match(/\] \-\> (\d+):(\d+)/);
+                            if(match) totalElapsedReal += (parseInt(match[1])*60) + parseInt(match[2]);
+                        });
+                        if (totalElapsedReal > 0) {
                             const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
                             const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
-                            saveToHistory(subj, color, totalElapsed); silentCloudSave(); renderHistory();
+                            saveToHistory(subj, color, totalElapsedReal, pipHistory); silentCloudSave(); renderHistory();
                             if(statsPanel && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
                         }
                     }
@@ -970,14 +987,21 @@
         }
         function saveExamSettings() { localStorage.setItem(getKey('ExamName'), document.getElementById('input-exam-name').value.trim()); localStorage.setItem(getKey('ExamDate'), document.getElementById('input-exam-date').value); updateExamCountdown(); silentCloudSave(); }
 
-        function saveToHistory(subject, color, durationInSeconds) {
+        function saveToHistory(subject, color, durationInSeconds, detailsArray = null) {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }); let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            if (!history[dateStr]) history[dateStr] = {}; if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color };
+            if (!history[dateStr]) history[dateStr] = {}; if (!history[dateStr][subject]) history[dateStr][subject] = { minutes: 0, color: color, details: [] };
+            
             let minsToAdd = Math.round(durationInSeconds / 60); if (minsToAdd < 1) minsToAdd = 1; 
-            history[dateStr][subject].minutes += minsToAdd; localStorage.setItem(getKey('History'), JSON.stringify(history)); calculateNetHoursToday(); 
+            history[dateStr][subject].minutes += minsToAdd; 
+            
+            if(detailsArray) {
+                if(!history[dateStr][subject].details) history[dateStr][subject].details = [];
+                history[dateStr][subject].details.push(...detailsArray);
+            }
+            
+            localStorage.setItem(getKey('History'), JSON.stringify(history)); calculateNetHoursToday(); 
         }
 
-        // NOVO: REGISTRO RÁPIDO (EM LINHA)
         function addDummyHistory() {
             const dateStr = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
@@ -986,7 +1010,7 @@
             let subj = "Novo Registro"; let counter = 1;
             while (history[dateStr][subj]) { counter++; subj = `Novo Registro (${counter})`; }
             
-            history[dateStr][subj] = { minutes: 25, color: '#74c0fc' }; 
+            history[dateStr][subj] = { minutes: 25, color: '#74c0fc', details: [] }; 
             localStorage.setItem(getKey('History'), JSON.stringify(history));
             
             calculateNetHoursToday(); silentCloudSave();
@@ -1003,7 +1027,14 @@
             if (!newSubj || isNaN(newMins) || newMins < 1 || !newDateIso) return; 
             const dObj = new Date(newDateIso + 'T12:00:00'); const newDateStr = dObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             let history = JSON.parse(localStorage.getItem(getKey('History'))) || {};
-            if (history[dateStr] && history[dateStr][safeOldSubj]) { delete history[dateStr][safeOldSubj]; if (Object.keys(history[dateStr]).length === 0) delete history[dateStr]; if (!history[newDateStr]) history[newDateStr] = {}; if (history[newDateStr][newSubj]) { history[newDateStr][newSubj].minutes += newMins; history[newDateStr][newSubj].color = newColor; } else { history[newDateStr][newSubj] = { minutes: newMins, color: newColor }; } localStorage.setItem(getKey('History'), JSON.stringify(history)); silentCloudSave(); }
+            if (history[dateStr] && history[dateStr][safeOldSubj]) { 
+                let oldDetails = history[dateStr][safeOldSubj].details || [];
+                delete history[dateStr][safeOldSubj]; if (Object.keys(history[dateStr]).length === 0) delete history[dateStr]; 
+                if (!history[newDateStr]) history[newDateStr] = {}; 
+                if (history[newDateStr][newSubj]) { history[newDateStr][newSubj].minutes += newMins; history[newDateStr][newSubj].color = newColor; if(!history[newDateStr][newSubj].details) history[newDateStr][newSubj].details = []; history[newDateStr][newSubj].details.push(...oldDetails); } 
+                else { history[newDateStr][newSubj] = { minutes: newMins, color: newColor, details: oldDetails }; } 
+                localStorage.setItem(getKey('History'), JSON.stringify(history)); silentCloudSave(); 
+            }
             editingHistoryItem = null; renderHistory(); calculateNetHoursToday(); if(statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
         }
 
@@ -1019,10 +1050,18 @@
                 for (let subj in history[date]) {
                     const data = history[date][subj]; const displayTime = data.minutes < 60 ? `${data.minutes} min` : `${Math.floor(data.minutes/60)}h ${data.minutes%60}m`;
                     const safeSubj = subj.replace(/'/g, "\\'"); 
+                    
+                    let detailsHtml = '';
+                    if (data.details && data.details.length > 0) {
+                        detailsHtml = `<div class="history-details-box">` + data.details.map(d => `<div>${d}</div>`).join('') + `</div>`;
+                    }
+
                     if (editingHistoryItem && editingHistoryItem.date === date && editingHistoryItem.subject === subj) {
                         const nums = date.match(/(\d{1,2})\D+(\d{1,2})\D+(\d{4})/); let isoDate = nums ? `${nums[3]}-${nums[2].padStart(2,'0')}-${nums[1].padStart(2,'0')}` : "";
-                        html += `<div class="history-item" style="background: rgba(125,125,125,0.08); padding: 8px; border-radius: 8px; margin-bottom: 8px;"><div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center; width:100%;"><input type="date" id="edit-hist-date" class="inline-input" value="${isoDate}" style="width: 105px; padding: 4px;"><input type="text" id="edit-hist-subj" class="inline-input" value="${subj}" style="flex-grow:1; min-width: 100px; padding: 4px;"><div class="color-wrapper" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;"><input type="color" id="edit-hist-color" value="${data.color}" style="width: 32px; height: 32px; border:none; padding:0;"></div><input type="number" id="edit-hist-mins" class="inline-input time" value="${data.minutes}" min="1" style="padding: 4px;"><button class="action-btn" onclick="saveEditHistory('${date}', '${safeSubj}')">✅</button><button class="action-btn" onclick="cancelEditHistory()">❌</button></div></div>`;
-                    } else { html += `<div class="history-item"><div class="history-item-subject"><span class="history-item-dot" style="background-color: ${data.color}"></span><span>${subj}</span></div><div style="display: flex; align-items: center; gap: 8px;"><span><strong>${displayTime}</strong></span><div class="history-item-actions"><button class="history-action-btn" onclick="startEditHistory('${date}', '${safeSubj}')" title="Editar">✏️</button><button class="history-action-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar">✖</button></div></div></div>`; }
+                        html += `<div class="history-item" style="background: rgba(125,125,125,0.08); padding: 8px; border-radius: 8px; margin-bottom: 8px; flex-direction:column;"><div style="display:flex; flex-wrap: wrap; gap: 6px; align-items:center; width:100%;"><input type="date" id="edit-hist-date" class="inline-input" value="${isoDate}" style="width: 105px; padding: 4px;"><input type="text" id="edit-hist-subj" class="inline-input" value="${subj}" style="flex-grow:1; min-width: 100px; padding: 4px;"><div class="color-wrapper" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;"><input type="color" id="edit-hist-color" value="${data.color}" style="width: 32px; height: 32px; border:none; padding:0;"></div><input type="number" id="edit-hist-mins" class="inline-input time" value="${data.minutes}" min="1" style="padding: 4px;"><button class="action-btn" onclick="saveEditHistory('${date}', '${safeSubj}')">✅</button><button class="action-btn" onclick="cancelEditHistory()">❌</button></div></div>`;
+                    } else { 
+                        html += `<div class="history-item"><div style="display:flex; justify-content:space-between; width:100%;"><div class="history-item-subject"><span class="history-item-dot" style="background-color: ${data.color}"></span><span>${subj}</span></div><div style="display: flex; align-items: center; gap: 8px;"><span><strong>${displayTime}</strong></span><div class="history-item-actions"><button class="history-action-btn" onclick="startEditHistory('${date}', '${safeSubj}')" title="Editar">✏️</button><button class="history-action-btn" onclick="deleteHistoryItem('${date}', '${safeSubj}')" title="Apagar">✖</button></div></div></div>${detailsHtml}</div>`; 
+                    }
                 }
                 html += `</div>`; historyContent.innerHTML += html;
             });
