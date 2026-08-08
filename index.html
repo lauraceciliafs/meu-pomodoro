@@ -775,11 +775,9 @@
                     lapCard.innerHTML = `<h2 style="color: var(--pip-safe); margin: 0; font-size: 1.5rem;">Sessão Salva!</h2>`; lapCard.style.borderColor = "var(--pip-safe)"; lapCard.style.background = "rgba(81, 207, 102, 0.15)";
                     btnNext.textContent = "🏁 Fechar Janela"; btnNext.disabled = true; btnNext.style.background = "var(--pip-safe)"; btnNext.style.color = "#fff";
                     histList.style.display = 'block'; histList.innerHTML = pipHistory.map(h => `<div class="hist-item">${h}</div>`).join('');
-                    alarmAudio.play().catch(e=>{});
                     
                     const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
                     const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; 
-                    // O tempo total agora é o que ele gastou de verdade na vida real:
                     let totalElapsedReal = 0;
                     pipHistory.forEach(item => {
                         let match = item.match(/\] \-\> (\d+):(\d+)/);
@@ -793,9 +791,14 @@
                 }
 
                 function tick() {
-                    // MUDANÇA: O tempo global agora apenas desce. Se ficar negativo, ele mostra que estourou o tempo planejado, mas continua rolando.
                     pipGlobalLeft--; pipCurrentLapTime++;
                     globalDisplay.textContent = formatTime(pipGlobalLeft); 
+                    
+                    // ALERTA SONORO: Toca apenas UMA vez quando o tempo planejado zera
+                    if (pipGlobalLeft === 0) {
+                        alarmAudio.play().catch(e=>{});
+                    }
+
                     if(pipGlobalLeft < 0) globalDisplay.style.color = 'var(--pip-danger)';
                     else globalDisplay.style.color = 'var(--pip-text)';
 
@@ -803,8 +806,6 @@
                     const status = getStatusClass(pipCurrentLapTime); lapDisplay.className = `lap-timer ${status}`; lapCard.className = `lap-container border-${status}`;
                     const diff = pipTargetTimePerQuestion - pipCurrentLapTime;
                     if (diff > 0) { lapDiffDisplay.textContent = `Você tem +${formatTime(diff)} de sobra`; lapDiffDisplay.className = 'lap-diff safe'; } else if (diff === 0) { lapDiffDisplay.textContent = `No limite da meta!`; lapDiffDisplay.className = 'lap-diff warning'; } else { lapDiffDisplay.textContent = `Usando ${formatTime(Math.abs(diff))} de cheque especial!`; lapDiffDisplay.className = 'lap-diff danger'; }
-                    
-                    // Removido o código que fechava a aba automaticamente. Agora só fecha clicando no botão "Próxima".
                 }
 
                 function nextQuestion() {
@@ -812,7 +813,6 @@
                     const statusText = `<span style="color:${statusColor}">${diff >= 0 ? '+' : '-'}${formatTime(Math.abs(diff))}</span>`;
                     const labelQ = activePipMode === 'correcao' ? `[${correctionPlaylist[pipCurrentQ-1].reason.split(' ')[0]}]` : `[Simulado]`;
                     
-                    // Salva a string detalhada no array para ir para o Histórico Principal
                     pipHistory.push(`<strong>Q${pipCurrentQ}</strong> ${labelQ} -> ${formatTime(pipCurrentLapTime)} (Meta: ${formatTime(pipTargetTimePerQuestion)} | Saldo: ${statusText})`);
                     
                     if (pipCurrentQ >= pipTotalQuestions) { finishSpeedrunner(); return; }
