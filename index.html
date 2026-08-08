@@ -185,6 +185,8 @@
         .color-setting input[type="color"] { border: none; width: 30px; height: 30px; cursor: pointer; padding: 0; background: none; border-radius: 6px; }
         .color-setting input[type="range"] { flex-grow: 1; cursor: pointer; }
         .color-setting span { font-size: 0.75rem; flex-shrink: 0; }
+        
+        .corr-time-input:focus { background: rgba(125,125,125,0.1); outline: none; border: 1px dashed var(--accent-color); }
 
         /* HEATMAP DYNAMIC */
         .stats-divider { margin: 75px 0 25px 0; border-top: 1px dashed var(--border-color); position: relative; }
@@ -338,11 +340,11 @@
             <!-- ABA CORRECAO -->
             <div id="pip-view-correcao" style="display: none;">
                 <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 0; margin-bottom: 15px;">
-                    Tempo distribuído por gravidade do erro (Lacuna teórica ganha + tempo).
+                    Selecione o motivo e nós sugerimos o tempo (você pode editar o tempo clicando nele!).
                 </p>
                 <div class="setting-group flex-row">
                     <div>
-                        <span class="setting-label">Minutos Totais</span>
+                        <span class="setting-label">Minutos Totais (Alvo)</span>
                         <input type="number" id="inp-corr-time" class="setting-input" value="60" min="1" oninput="updateCorrRows()">
                     </div>
                     <div>
@@ -372,7 +374,6 @@
             
             <div id="history-content"></div>
             
-            <!-- BOTÃO REGISTRO RÁPIDO (EM LINHA) -->
             <button class="main-btn" style="width: 100%; border: 1px dashed var(--text-color); margin-top: 16px; margin-bottom: 16px; font-weight: bold;" onclick="addDummyHistory()">➕ Adicionar Registro Rápido</button>
 
             <div id="clear-history-wrapper"></div>
@@ -453,7 +454,17 @@
                 </div>
             </div>
 
-            <div class="setting-group flex-row">
+            <!-- PESOS DA CORREÇÃO -->
+            <div class="setting-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
+                <span class="setting-label" style="color: var(--accent-color);">⚖️ Pesos da Correção (Algoritmo)</span>
+                <p style="font-size:0.7rem; opacity:0.7; margin-top:0;">Aumente o número para que o sistema reserve mais minutos para este tipo de erro nos simulados.</p>
+                <div id="weights-container" style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+                    <!-- Gerado dinamicamente -->
+                </div>
+                <button class="main-btn" style="width: 100%; margin-top: 10px; padding: 6px; font-size: 0.75rem; border-color: var(--border-color);" onclick="resetWeights()">🔄 Restaurar Pesos Padrão</button>
+            </div>
+
+            <div class="setting-group flex-row" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
                 <div>
                     <span class="setting-label">Pausa Curta (min)</span>
                     <input type="number" id="input-break-short" class="setting-input" value="5" min="1" onchange="updateLivePause('curta')">
@@ -589,7 +600,7 @@
         }
 
         // ==========================================
-        // PVO SPEEDRUNNER & CORREÇÃO
+        // PVO SPEEDRUNNER & CORREÇÃO COM PESOS EDITÁVEIS
         // ==========================================
         let activePipMode = 'prova';
         let pipGlobalLeft = 0; let pipCurrentLapTime = 0; let pipCurrentQ = 1;
@@ -597,14 +608,44 @@
         let pipTargetTimePerQuestion = 0; let pipInitialTotalSec = 0; let pipFinished = false;
         let correctionPlaylist = [];
 
-        const CORR_REASONS = {
-            "Conteúdo não estudado": 1,
-            "Falta de atenção": 2,
-            "Acerto com dúvida": 3,
-            "Interpretação/Não entendimento": 4,
-            "Esquecimento (Retomada)": 5,
-            "Lacuna teórica": 8
+        // Carrega os pesos da nuvem/local ou usa o padrão
+        let CORR_REASONS = JSON.parse(localStorage.getItem(getKey('CorrWeights'))) || {
+            "✅ Acerto com Certeza": 1,
+            "⏭️ Conteúdo não estudado": 1,
+            "🎯 Falta de atenção": 2,
+            "⚖️ Acerto com dúvida": 3,
+            "🕵️ Interpretação/Não entendimento": 4,
+            "🧠 Esquecimento (Retomada)": 5,
+            "📚 Lacuna teórica": 8
         };
+
+        function renderWeightsConfig() {
+            const container = document.getElementById('weights-container');
+            if(!container) return;
+            container.innerHTML = '';
+            for(let reason in CORR_REASONS) {
+                container.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; background:rgba(125,125,125,0.05); padding:4px 8px; border-radius:6px; border:1px solid var(--border-color);">
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${reason}</span>
+                    <input type="number" class="inline-input time" value="${CORR_REASONS[reason]}" min="1" style="width:45px; padding:4px; text-align:center; font-weight:bold;" onchange="updateWeight('${reason}', this.value)">
+                </div>`;
+            }
+        }
+
+        function updateWeight(reason, val) {
+            let v = parseInt(val); if(isNaN(v) || v < 1) v = 1;
+            CORR_REASONS[reason] = v;
+            localStorage.setItem(getKey('CorrWeights'), JSON.stringify(CORR_REASONS));
+            if(activePipMode === 'correcao') updateCorrRows();
+            silentCloudSave();
+        }
+
+        function resetWeights() {
+            CORR_REASONS = { "✅ Acerto com Certeza": 1, "⏭️ Conteúdo não estudado": 1, "🎯 Falta de atenção": 2, "⚖️ Acerto com dúvida": 3, "🕵️ Interpretação/Não entendimento": 4, "🧠 Esquecimento (Retomada)": 5, "📚 Lacuna teórica": 8 };
+            localStorage.setItem(getKey('CorrWeights'), JSON.stringify(CORR_REASONS));
+            renderWeightsConfig();
+            if(activePipMode === 'correcao') updateCorrRows();
+            silentCloudSave();
+        }
 
         function setPipMode(mode) {
             activePipMode = mode;
@@ -642,7 +683,8 @@
                 for(let reason in CORR_REASONS) { selectHtml += `<option value="${reason}">${reason}</option>`; }
                 selectHtml += `</select>`;
                 
-                div.innerHTML = `<strong style="width: 25px;">Q${i}</strong> ${selectHtml} <span class="corr-time-prev" style="font-family: var(--font-timer); font-weight: bold; width: 45px; text-align: right; color: var(--accent-color);">00:00</span>`;
+                // Agora o tempo é um input text editável e não mais um span estático!
+                div.innerHTML = `<strong style="width: 25px;">Q${i}</strong> ${selectHtml} <input type="text" class="setting-input corr-time-input" style="font-family: var(--font-timer); font-weight: bold; width: 55px; text-align: center; padding: 4px; color: var(--accent-color); background: transparent; border: 1px solid transparent; border-radius: 4px;" value="00:00" title="Altere este tempo livremente se quiser!">`;
                 container.appendChild(div);
             }
             while(container.children.length > qCount) { container.removeChild(container.lastChild); }
@@ -653,21 +695,18 @@
             const totalMins = parseInt(document.getElementById('inp-corr-time').value) || 0;
             const totalSecs = totalMins * 60;
             const selects = document.querySelectorAll('.corr-select');
-            const timeSpans = document.querySelectorAll('.corr-time-prev');
+            const timeInputs = document.querySelectorAll('.corr-time-input');
             
             let totalWeight = 0;
             selects.forEach(sel => totalWeight += CORR_REASONS[sel.value]);
             
-            correctionPlaylist = [];
             selects.forEach((sel, idx) => {
                 const w = CORR_REASONS[sel.value];
                 const allocatedSecs = totalWeight > 0 ? Math.floor((w / totalWeight) * totalSecs) : 0;
                 
                 const m = Math.floor(allocatedSecs / 60).toString().padStart(2, '0');
                 const s = (allocatedSecs % 60).toString().padStart(2, '0');
-                timeSpans[idx].textContent = `${m}:${s}`;
-                
-                correctionPlaylist.push({ q: idx + 1, reason: sel.value, time: allocatedSecs });
+                timeInputs[idx].value = `${m}:${s}`;
             });
         }
 
@@ -678,13 +717,28 @@
             silentCloudSave();
         }
 
-       async function openFloatingWindow() {
+        async function openFloatingWindow() {
             if (activePipMode === 'prova') {
                 pipInitialTotalSec = (parseInt(document.getElementById('inp-pip-time').value) || 50) * 60;
                 pipTotalQuestions = parseInt(document.getElementById('inp-pip-q').value) || 10;
                 pipTargetTimePerQuestion = Math.floor(pipInitialTotalSec / pipTotalQuestions);
             } else {
-                pipInitialTotalSec = (parseInt(document.getElementById('inp-corr-time').value) || 60) * 60;
+                correctionPlaylist = [];
+                const selects = document.querySelectorAll('.corr-select');
+                const timeInputs = document.querySelectorAll('.corr-time-input');
+                let finalTotalSecs = 0;
+
+                // Lê diretamente o que está escrito na caixinha de tempo, respeitando se você editou!
+                selects.forEach((sel, idx) => {
+                    let parts = timeInputs[idx].value.split(':');
+                    let m = parseInt(parts[0]) || 0;
+                    let s = parseInt(parts[1]) || 0;
+                    let allocatedSecs = (m * 60) + s;
+                    finalTotalSecs += allocatedSecs;
+                    correctionPlaylist.push({ q: idx + 1, reason: sel.value, time: allocatedSecs });
+                });
+
+                pipInitialTotalSec = finalTotalSecs; // O tempo total de prova será a soma exata dos seus tempos customizados
                 pipTotalQuestions = correctionPlaylist.length;
                 if (pipTotalQuestions === 0) { alert("Adicione questões para corrigir."); return; }
                 pipTargetTimePerQuestion = correctionPlaylist[0].time;
@@ -709,7 +763,7 @@
                 function formatTime(sec) { const absSec = Math.abs(sec); const m = Math.floor(absSec / 60).toString().padStart(2, '0'); const s = (absSec % 60).toString().padStart(2, '0'); return (sec < 0 ? "-" : "") + `${m}:${s}`; }
 
                 let dynamicHeader = activePipMode === 'correcao' 
-                    ? `<div class="lap-title" id="lap-reason" style="font-weight: bold; color: var(--pip-accent);">📝 ${correctionPlaylist[0].reason}</div>`
+                    ? `<div class="lap-title" id="lap-reason" style="font-weight: bold; color: var(--pip-accent); margin-bottom:10px;">📝 ${correctionPlaylist[0].reason}</div>`
                     : `<div class="lap-title" id="lap-reason">Tempo nesta questão</div>`;
 
                 pipWindow.document.body.innerHTML = `<div class="header"><span>Restante Geral</span><span id="target-label">Alvo: ${formatTime(pipTargetTimePerQuestion)}/Q</span></div><h1 class="global-timer" id="global-timer">${formatTime(pipGlobalLeft)}</h1><div class="q-counter" id="q-counter">Questão 1 de ${pipTotalQuestions}</div><div class="lap-container" id="lap-card">${dynamicHeader}<h2 class="lap-timer safe" id="lap-timer">00:00</h2><div class="lap-diff safe" id="lap-diff">Dentro da meta</div></div><button class="btn-next" id="btn-next">⏭️ Concluir e Próxima</button><div class="history-list" id="hist-list" style="display: none;"></div>`;
@@ -729,7 +783,6 @@
                     const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
                     const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
                     
-                    // NOVA REGRA: Salva se tiver MAIOR QUE ZERO (mesmo que sejam só 5 segundos de teste)
                     if (totalElapsed > 0) {
                         saveToHistory(subj, color, totalElapsed); silentCloudSave(); renderHistory(); 
                         if(statsPanel && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
@@ -765,7 +818,6 @@
                 btnNext.addEventListener('click', nextQuestion);
                 if (pipInterval) clearInterval(pipInterval); pipInterval = setInterval(tick, 1000);
 
-                // NOVA REGRA AQUI TAMBÉM: Se fechar a janela no meio, salva também.
                 pipWindow.addEventListener("pagehide", () => {
                     clearInterval(pipInterval);
                     if (!pipFinished) {
@@ -780,7 +832,6 @@
                 });
             } catch (error) { console.error("Erro ao abrir PiP:", error); alert("Erro ao abrir a janela flutuante. Recarregue a página e tente novamente."); }
         }
-        
 
         // ==========================================
         // LÓGICA PRINCIPAL POMODORO E NUVEM
@@ -802,7 +853,7 @@
             const binId = localStorage.getItem(getKey('BinId')); const apiKey = localStorage.getItem(getKey('MasterKey')); if (!binId || !apiKey) return; setCloudStatus('syncing');
             const payload = {
                 queue: JSON.parse(localStorage.getItem(getKey('Queue'))) || [], history: JSON.parse(localStorage.getItem(getKey('History'))) || {},
-                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '', pipSafe: localStorage.getItem(getKey('PipSafe')) || '#51cf66', pipWarning: localStorage.getItem(getKey('PipWarning')) || '#fcc419', pipDanger: localStorage.getItem(getKey('PipDanger')) || '#ff6b6b' }
+                settings: { bgUrl: localStorage.getItem(getKey('BgUrl')) || '', audioUrl: localStorage.getItem(getKey('AudioUrl')) || '', textColor: localStorage.getItem(getKey('TextColor')) || '#37352f', bgColor: localStorage.getItem(getKey('BgColor')) || '#ffffff', bgOpacity: localStorage.getItem(getKey('BgOpacity')) || '0.85', heatmapColor: localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b', shortBreakColor: localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a', longBreakColor: localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc', fontText: localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif", fontTimer: localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif", breakShort: localStorage.getItem(getKey('BreakShort')) || '5', breakLong: localStorage.getItem(getKey('BreakLong')) || '15', examName: localStorage.getItem(getKey('ExamName')) || '', examDate: localStorage.getItem(getKey('ExamDate')) || '', pipSafe: localStorage.getItem(getKey('PipSafe')) || '#51cf66', pipWarning: localStorage.getItem(getKey('PipWarning')) || '#fcc419', pipDanger: localStorage.getItem(getKey('PipDanger')) || '#ff6b6b', corrWeights: localStorage.getItem(getKey('CorrWeights')) || '' }
             };
             try { await fetch(`https://api.jsonbin.io/v3/b/${binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey }, body: JSON.stringify(payload) }); setCloudStatus('success'); } catch (error) { setCloudStatus('error'); }
         }
@@ -820,6 +871,7 @@
                 if (record.history) originalSetItem.call(localStorage, getKey('History'), JSON.stringify(record.history));
                 if (record.settings) {
                     const s = record.settings; originalSetItem.call(localStorage, getKey('BgUrl'), s.bgUrl || ''); originalSetItem.call(localStorage, getKey('AudioUrl'), s.audioUrl || ''); originalSetItem.call(localStorage, getKey('TextColor'), s.textColor || '#37352f'); originalSetItem.call(localStorage, getKey('BgColor'), s.bgColor || '#ffffff'); originalSetItem.call(localStorage, getKey('BgOpacity'), s.bgOpacity || '0.85'); originalSetItem.call(localStorage, getKey('HeatmapColor'), s.heatmapColor || '#ff6b6b'); originalSetItem.call(localStorage, getKey('ShortBreakColor'), s.shortBreakColor || '#8ce99a'); originalSetItem.call(localStorage, getKey('LongBreakColor'), s.longBreakColor || '#74c0fc'); originalSetItem.call(localStorage, getKey('FontText'), s.fontText || "'Plus Jakarta Sans', sans-serif"); originalSetItem.call(localStorage, getKey('FontTimer'), s.fontTimer || "'Playfair Display', serif"); if (s.breakShort) originalSetItem.call(localStorage, getKey('BreakShort'), s.breakShort); if (s.breakLong) originalSetItem.call(localStorage, getKey('BreakLong'), s.breakLong); if (s.examName) originalSetItem.call(localStorage, getKey('ExamName'), s.examName); if (s.examDate) originalSetItem.call(localStorage, getKey('ExamDate'), s.examDate); if (s.pipSafe) originalSetItem.call(localStorage, getKey('PipSafe'), s.pipSafe); if (s.pipWarning) originalSetItem.call(localStorage, getKey('PipWarning'), s.pipWarning); if (s.pipDanger) originalSetItem.call(localStorage, getKey('PipDanger'), s.pipDanger);
+                    if (s.corrWeights) { originalSetItem.call(localStorage, getKey('CorrWeights'), s.corrWeights); CORR_REASONS = JSON.parse(s.corrWeights); renderWeightsConfig(); }
                 }
                 sessionStorage.setItem('CloudSynced', 'true'); setCloudStatus('success'); applySettingsToUI(); 
                 if(isManual && btn) { btn.textContent = '✅ Sucesso! Painel Atualizado.'; btn.style.backgroundColor = 'var(--text-color)'; btn.style.color = 'var(--bg-card)'; setTimeout(() => { btn.textContent = '☁️ Conectar e Puxar Dados'; btn.style.backgroundColor = 'transparent'; btn.style.color = 'var(--text-color)'; }, 3000); }
@@ -833,13 +885,13 @@
             document.documentElement.style.setProperty('--text-color', localStorage.getItem(getKey('TextColor')) || '#37352f');
             const bgColor = localStorage.getItem(getKey('BgColor')) || '#ffffff'; const opacity = localStorage.getItem(getKey('BgOpacity')) || '0.85';
             let hex = bgColor.replace('#', ''); let r = parseInt(hex.substring(0, 2), 16); let g = parseInt(hex.substring(2, 4), 16); let b = parseInt(hex.substring(4, 6), 16);
-            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, b}, ${opacity})`);
+            document.documentElement.style.setProperty('--bg-card', `rgba(${r}, ${g}, ${b}, ${opacity})`);
             
             const hmColor = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; document.documentElement.style.setProperty('--heatmap-color', hexToRgb(hmColor));
             shortBreakColor = localStorage.getItem(getKey('ShortBreakColor')) || '#8ce99a'; longBreakColor = localStorage.getItem(getKey('LongBreakColor')) || '#74c0fc';
             document.documentElement.style.setProperty('--font-text', localStorage.getItem(getKey('FontText')) || "'Plus Jakarta Sans', sans-serif"); document.documentElement.style.setProperty('--font-timer', localStorage.getItem(getKey('FontTimer')) || "'Playfair Display', serif");
 
-            updateExamCountdown(); calculateNetHoursToday(); renderBlocksList();
+            updateExamCountdown(); calculateNetHoursToday(); renderBlocksList(); renderWeightsConfig();
             
             if (currentMode === 'foco' && blocksQueue[currentBlockIndex]) { document.documentElement.style.setProperty('--accent-color', blocksQueue[currentBlockIndex].color || '#ff6b6b'); } else if (currentMode === 'curta') { document.documentElement.style.setProperty('--accent-color', shortBreakColor); } else if (currentMode === 'longa') { document.documentElement.style.setProperty('--accent-color', longBreakColor); }
         }
@@ -848,7 +900,6 @@
         localStorage.setItem = function(key, value) { originalSetItem.apply(this, arguments); if (key.includes('TimerState') || key.includes('BinId') || key.includes('MasterKey')) return; clearTimeout(autoSaveTimeout); autoSaveTimeout = setTimeout(() => { silentCloudSave(); }, 2000); };
         
         window.addEventListener('load', () => {
-            // As chaves estão vazias para você usar direto no painel (Engrenagem)
             const MEU_BIN_ID = "";
             const MINHA_MASTER_KEY = "";
 
@@ -860,7 +911,7 @@
             
             applySettingsToUI(); autoCloudLoad();
 
-            // 🛡️ VACINA ANTIDESCARTE DE ABA: Restaura o cronômetro exatamente de onde parou 
+            // 🛡️ VACINA ANTIDESCARTE DE ABA
             try {
                 let savedState = localStorage.getItem(getKey('TimerState'));
                 if (savedState) {
