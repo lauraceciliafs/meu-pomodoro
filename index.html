@@ -678,7 +678,7 @@
             silentCloudSave();
         }
 
-        async function openFloatingWindow() {
+       async function openFloatingWindow() {
             if (activePipMode === 'prova') {
                 pipInitialTotalSec = (parseInt(document.getElementById('inp-pip-time').value) || 50) * 60;
                 pipTotalQuestions = parseInt(document.getElementById('inp-pip-q').value) || 10;
@@ -729,9 +729,11 @@
                     const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
                     const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b'; const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
                     
-                    if (totalElapsed > 60) {
-                        saveToHistory(subj, color, totalElapsed); silentCloudSave();
-                        setTimeout(() => { alert(`🚨 TEMPO FINALIZADO!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nJá contabilizado no Histórico!`); }, 500);
+                    // NOVA REGRA: Salva se tiver MAIOR QUE ZERO (mesmo que sejam só 5 segundos de teste)
+                    if (totalElapsed > 0) {
+                        saveToHistory(subj, color, totalElapsed); silentCloudSave(); renderHistory(); 
+                        if(statsPanel && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
+                        setTimeout(() => { alert(`🚨 TEMPO FINALIZADO!\n\nForam registrados ${Math.floor(totalElapsed/60)} minutos e ${totalElapsed%60} segundos de estudo para a matéria "${subj}".\n\nJá contabilizado no Histórico e Horas Líquidas!`); }, 500);
                     }
                 }
 
@@ -763,19 +765,22 @@
                 btnNext.addEventListener('click', nextQuestion);
                 if (pipInterval) clearInterval(pipInterval); pipInterval = setInterval(tick, 1000);
 
+                // NOVA REGRA AQUI TAMBÉM: Se fechar a janela no meio, salva também.
                 pipWindow.addEventListener("pagehide", () => {
                     clearInterval(pipInterval);
                     if (!pipFinished) {
                         const totalElapsed = pipInitialTotalSec - pipGlobalLeft;
-                        if (totalElapsed > 60) {
+                        if (totalElapsed > 0) {
                             const subj = activePipMode === 'correcao' ? (document.getElementById('inp-corr-subject').value.trim() || "Correção de Simulado") : (document.getElementById('inp-pip-subject').value.trim() || "Simulado PVO"); 
                             const color = localStorage.getItem(getKey('HeatmapColor')) || '#ff6b6b';
-                            saveToHistory(subj, color, totalElapsed); silentCloudSave();
+                            saveToHistory(subj, color, totalElapsed); silentCloudSave(); renderHistory();
+                            if(statsPanel && statsPanel.classList.contains('open')) renderStats(document.querySelector('#stats-panel .mode-btn.active').id.replace('btn-stat-',''));
                         }
                     }
                 });
             } catch (error) { console.error("Erro ao abrir PiP:", error); alert("Erro ao abrir a janela flutuante. Recarregue a página e tente novamente."); }
         }
+        
 
         // ==========================================
         // LÓGICA PRINCIPAL POMODORO E NUVEM
